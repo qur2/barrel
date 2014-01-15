@@ -14,23 +14,6 @@ class StoreMeta(type):
         return super(StoreMeta, cls).__new__(cls, name, parents, dct)
 
 
-class FieldMeta(type):
-    """Metaclass that configures and plug the data getter in a field.
-    If the field uses a target + a separator and this separator is actually
-    present in the target, then the field needs a deep getter. Otherwise
-    simple getter will do it.
-    """
-    def __call__(self, *args, **kwargs):
-        obj = super(FieldMeta, self).__call__(*args, **kwargs)
-        if obj.target and obj.target_sep in obj.target:
-            obj.fetch = lambda d: deep_get(obj.target, d, obj.target_sep)
-            obj.fetch.func_name = deep_get.func_name
-        else:
-            obj.fetch = lambda d: simple_get(obj.target, d)
-            obj.fetch.func_name = simple_get.func_name
-        return obj
-
-
 def simple_get(key, dictionary):
     return dictionary[key]
 
@@ -47,11 +30,16 @@ def deep_get(deep_key, dictionary, sep=':'):
 
 class Field(object):
     """Base field class for dict datastore handling."""
-    __metaclass__ = FieldMeta
 
     def __init__(self, target, target_sep=':'):
         self.target = target
         self.target_sep = target_sep
+
+    def get(self, dct):
+        if self.target and self.target_sep in self.target:
+            return deep_get(self.target, dct, self.target_sep)
+        else:
+            return simple_get(self.target, dct)
 
 
 class EmbeddedStoreField(Field):
@@ -111,7 +99,7 @@ class Store(object):
         elif isinstance(attr, (Field,)):
             # if it's a field, fetch the value in the model data and return it
             try:
-                return attr.fetch(self.data)
+                return attr.get(self.data)
             except (KeyError,):
                 raise AttributeError("'%s' datastore lookup failed for '%s'" %
                     (self.__class__.__name__, attr.target))
@@ -155,3 +143,15 @@ class CollectionStore(Store):
 
     def __len__(self):
         return len(self.stores)
+
+
+class BooleanField(Field):
+    """Handles the boolean values"""
+    def get(self, dct):
+        value = super(BooleanField, self).get(dct)
+        if value == 'true':
+            return True
+        elif value == 'false':
+            return False
+        else:
+            raise ValueError("Cannot convert to boolean: %s" % value)

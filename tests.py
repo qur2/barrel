@@ -57,16 +57,6 @@ class BarrelTestCase(TestCase):
         """`deep_get` can receive any separator"""
         self.assertEqual(deep_get("settings/com.bookpac.user.settings.locale", self.raw_data, sep='/'), self.raw_data["settings"]["com.bookpac.user.settings.locale"])
 
-    def testFieldSimpleTarget(self):
-        """`Field` returns value using `simple_get`"""
-        f = Field(target="userID")
-        self.assertEqual(f.fetch.func_name, 'simple_get')
-
-    def testFieldDeepTarget(self):
-        """`Field` returns value using `deep_get`"""
-        f = Field(target="settings:com.bookpac.user.settings.locale")
-        self.assertEqual(f.fetch.func_name, 'deep_get')
-
     def testFieldNoTarget(self):
         """`Field` cannot be instantiated without target"""
         self.assertRaises(TypeError, Field)
@@ -152,3 +142,17 @@ class BarrelTestCase(TestCase):
             id = Field(target='foo')
         f = Foo(self.raw_data)
         self.assertRaises(AttributeError, lambda: f.id)
+
+    def testBooleanField(self):
+        """`BooleanField` returns boolean value"""
+        class User(Store):
+            disabled = BooleanField(target='disabled')
+        u = User(self.raw_data)
+        self.assertFalse(u.disabled)
+
+    def testBooleanFieldValueError(self):
+        """`BooleanField` throws ValueError when converting from invalid data"""
+        class User(Store):
+            disabled = BooleanField(target='userID')
+        u = User(self.raw_data)
+        self.assertRaises(ValueError, lambda: u.disabled)
