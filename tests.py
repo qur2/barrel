@@ -1,5 +1,6 @@
 from django.test import TestCase
 from datetime import datetime
+from decimal import Decimal
 from . import *
 
 
@@ -33,9 +34,13 @@ DATA = {
     "com.bookpac.user.settings.shop.zipcode": "12345"
   },
   "disabled": 'false',
-  # the following two lines are not a real world example, since facebook users don't have password expiration date
-  # it is here just for the testing purposes
-  "passwordExpiration": "2014-01-25T12:00:00+01:00"
+  # the following two lines are not a real world example
+  # they are here just for the testing purposes
+  "passwordExpiration": "2014-01-25T12:00:00+01:00",
+  "money": {
+    "amount": 0.99,
+    "currency": "USD"
+  }
 }
 
 
@@ -170,3 +175,24 @@ class BarrelTestCase(TestCase):
             id = IntegerField(target='userID')
         u = User(self.raw_data)
         self.assertTrue(isinstance(u.id, int))
+
+    def testMoneyField(self):
+        """`MoneyField` returns `Money` object"""
+        class User(Store):
+            money = MoneyField(target='money')
+        u = User(self.raw_data)
+        self.assertTrue(isinstance(u.money, Money))
+
+    def testMoneyFieldAmount(self):
+        """`MoneyField` amount is correct"""
+        class User(Store):
+            money = MoneyField(target='money')
+        u = User(self.raw_data)
+        self.assertEqual(u.money.amount, Decimal(self.raw_data['money']['amount']).quantize(Decimal("0.00")))
+
+    def testMoneyFieldCurrency(self):
+        """`MoneyField` currency is correct"""
+        class User(Store):
+            money = MoneyField(target='money')
+        u = User(self.raw_data)
+        self.assertEqual(u.money.currency.code, self.raw_data['money']['currency'])

@@ -1,5 +1,6 @@
 """When I die I want to decompose in a barrel of porter and have it served in all the pubs in Dublin. J. P. Donleavy"""
 from iso8601 import iso8601
+from money import Money
 
 
 class StoreMeta(type):
@@ -170,3 +171,10 @@ class IntegerField(Field):
     def get(self, dct):
         value = super(IntegerField, self).get(dct)
         return int(value)
+
+
+class MoneyField(Field):
+    """Handles money dictionary values - amount and currency. Returns `Money` object"""
+    def get(self, dct):
+        value = super(MoneyField, self).get(dct)
+        return Money(**value)
