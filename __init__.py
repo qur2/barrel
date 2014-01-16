@@ -1,4 +1,5 @@
 """When I die I want to decompose in a barrel of porter and have it served in all the pubs in Dublin. J. P. Donleavy"""
+from iso8601 import iso8601
 
 
 class StoreMeta(type):
@@ -155,3 +156,10 @@ class BooleanField(Field):
             return False
         else:
             raise ValueError("Cannot convert to boolean: %s" % value)
+
+
+class DateField(Field):
+    """Handles date values - returns datetime object"""
+    def get(self, dct):
+        value = super(DateField, self).get(dct)
+        return iso8601.parse_date(value)

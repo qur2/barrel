@@ -1,4 +1,5 @@
 from django.test import TestCase
+from datetime import datetime
 from . import *
 
 
@@ -9,10 +10,6 @@ DATA = {
     {
       "identifier": "100003691408573",
       "authenticationServiceName": "FACEBOOK"
-    },
-    {
-      "identifier": "tchouktchouk",
-      "authenticationServiceName": "TRAINTRAIN"
     }
   ],
   "userPrivateName": "Txtrskins Dev",
@@ -35,7 +32,10 @@ DATA = {
     "com.bookpac.user.settings.shop.location": "fgdfgdfgfd",
     "com.bookpac.user.settings.shop.zipcode": "12345"
   },
-  "disabled": 'false'
+  "disabled": 'false',
+  # the following two lines are not a real world example, since facebook users don't have password expiration date
+  # it is here just for the testing purposes
+  "passwordExpiration": "2014-01-25T12:00:00+01:00"
 }
 
 
@@ -156,3 +156,10 @@ class BarrelTestCase(TestCase):
             disabled = BooleanField(target='userID')
         u = User(self.raw_data)
         self.assertRaises(ValueError, lambda: u.disabled)
+
+    def testDateField(self):
+        """`DateField` returns datetime object"""
+        class User(Store):
+            password_expiration = DateField(target='passwordExpiration')
+        u = User(self.raw_data)
+        self.assertTrue(isinstance(u.password_expiration, datetime))
