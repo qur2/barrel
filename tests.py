@@ -163,3 +163,10 @@ class BarrelTestCase(TestCase):
             password_expiration = DateField(target='passwordExpiration')
         u = User(self.raw_data)
         self.assertTrue(isinstance(u.password_expiration, datetime))
+
+    def testIntegerField(self):
+        """`IntegerField` returns int"""
+        class User(Store):
+            id = IntegerField(target='userID')
+        u = User(self.raw_data)
+        self.assertTrue(isinstance(u.id, int))

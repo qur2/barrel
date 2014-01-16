@@ -163,3 +163,10 @@ class DateField(Field):
     def get(self, dct):
         value = super(DateField, self).get(dct)
         return iso8601.parse_date(value)
+
+
+class IntegerField(Field):
+    """Handles integer values - returns int"""
+    def get(self, dct):
+        value = super(IntegerField, self).get(dct)
+        return int(value)
