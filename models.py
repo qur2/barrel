@@ -23,27 +23,6 @@ class Voucher(Store, RpcMixin):
     id = Field(target='caca')
 
 
-# move inside Basket class
-class Item(Store, RpcMixin):
-    total = MoneyField(target='positionTotal')
-    net_total = MoneyField(target='positionNetTotal')
-    tax_total = MoneyField(target='positionTaxTotal')
-    undiscounted_total = MoneyField(target='undiscountedPositionTotal')
-    # voucher = EmbeddedStoreField(target='item', store_class=Voucher)
-    document = EmbeddedStoreField(target='item', store_class=Document)
-
-    # def init(self, data, sep=':'):
-    #     super(Item, self).__init__(data, sep)
-    #     if self._data['itemType'] == 'DOCUMENT':
-    #         self.document
-
-# class DocumentItem(Item):
-#     item = EmbeddedStoreField()
-
-# class VoucherItem(Item):
-#     item = EmbeddedStoreField()
-
-
 class CheckoutProperties(Store):
     clear_failed_preauth = BooleanField(target='clearFailedAuthorization')
     clear_preauth = BooleanField(target='clearPreAuthorization')
@@ -55,6 +34,14 @@ class CheckoutProperties(Store):
 
 class Basket(Store, RpcMixin):
     interface = 'WSShopMgmt'
+
+    class Item(Store, RpcMixin):
+        total = MoneyField(target='positionTotal')
+        net_total = MoneyField(target='positionNetTotal')
+        tax_total = MoneyField(target='positionTaxTotal')
+        undiscounted_total = MoneyField(target='undiscountedPositionTotal')
+        # voucher = EmbeddedStoreField(target='item', store_class=Voucher)
+        document = EmbeddedStoreField(target='item', store_class=Document)
 
     class Payment(Store):
         merchant_account = Field(target='merchantAccount')
@@ -82,5 +69,5 @@ class Basket(Store, RpcMixin):
     @classmethod
     @rpc_call
     def checkout(cls, token, bid, checkout_props):
-        # checkoutBasket is deprectated
-        return cls.signature(method='checkoutBasket', args=[token, bid, checkout_props.as_dict()])
+        # checkoutBasket is deprecated
+        return cls.signature(method='checkoutBasket', args=[token, bid, checkout_props.data])
