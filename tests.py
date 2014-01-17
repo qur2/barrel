@@ -1,7 +1,8 @@
-from django.test import TestCase
+from . import *
+from copy import deepcopy
 from datetime import datetime
 from decimal import Decimal
-from . import *
+from django.test import TestCase
 
 
 DATA = {
@@ -63,6 +64,18 @@ class BarrelTestCase(TestCase):
         """`deep_get` handles nested dictionaries"""
         self.assertEqual(deep_get("settings:com.bookpac.user.settings.locale", self.raw_data), self.raw_data["settings"]["com.bookpac.user.settings.locale"])
 
+    def testSimpleSet(self):
+        """`simple_set` behaves like dictionary `__setitem__`"""
+        local_data = {'userID': 'oui'}
+        simple_set("userID", local_data, 'non')
+        self.assertEqual(local_data["userID"], 'non')
+
+    def testDeepSet(self):
+        """`deep_set` handles nested dictionaries"""
+        local_data = {'userID': {'foo': {'bar': 'oui'}}}
+        deep_set("userID:foo:bar", local_data, 'non')
+        self.assertEqual(local_data["userID"]["foo"]["bar"], 'non')
+
     def testDeepGetSeparator(self):
         """`deep_get` can receive any separator"""
         self.assertEqual(deep_get("settings/com.bookpac.user.settings.locale", self.raw_data, sep='/'), self.raw_data["settings"]["com.bookpac.user.settings.locale"])
@@ -81,6 +94,15 @@ class BarrelTestCase(TestCase):
             id = Field(target='userID')
         u = User(self.raw_data)
         self.assertEqual(u.id, self.raw_data["userID"])
+
+    def testStoreFieldSet(self):
+        """`Store` sets `Field`-type attributes"""
+        local_data = self.raw_data.copy()
+        class User(Store):
+            id = Field(target='userID')
+        u = User(local_data)
+        u.id = 'eureka!'
+        self.assertEqual(u.id, local_data['userID'])
 
     def testStoreAttr(self):
         """`Store` handles any attributes"""
@@ -124,6 +146,18 @@ class BarrelTestCase(TestCase):
 
         u = User(self.raw_data)
         self.assertEqual(u.settings.locale, self.raw_data["settings"]["com.bookpac.user.settings.locale"])
+
+    def testStoreWithEmbeddedStoreFieldSet(self):
+        """`Store` sets data in the embedded store"""
+        local_data = deepcopy(self.raw_data)
+        class UserSettings(Store):
+            locale = Field(target='com.bookpac.user.settings.locale')
+        class User(Store):
+            settings = EmbeddedStoreField(target='settings', store_class=UserSettings)
+
+        u = User(local_data)
+        u.settings.locale = 'FU'
+        self.assertEqual(u.settings.locale, local_data["settings"]["com.bookpac.user.settings.locale"])
 
     def testCollectionStore(self):
         """`CollectionStore` items have the given store class"""

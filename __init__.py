@@ -20,14 +20,28 @@ def simple_get(key, dictionary):
     return dictionary[key]
 
 
+def simple_set(key, dictionary, value):
+    dictionary[key] = value
+
+
 def deep_get(deep_key, dictionary, sep=':'):
-    """Allows to fetch through multiple dictionary levels, splitting
+    """Fetches through multiple dictionary levels, splitting
     the compound key using the specified separator.
     """
     keys = deep_key.split(sep)
     while keys:
         dictionary = dictionary[keys.pop(0)]
     return dictionary
+
+def deep_set(deep_key, dictionary, value, sep=':'):
+    """Sets through multiple dictionary levels, splitting
+    the compound key using the specified separator.
+    """
+    keys = deep_key.split(sep)
+    key = keys.pop()
+    while keys:
+        dictionary = dictionary[keys.pop(0)]
+    dictionary[key] = value
 
 
 class Field(object):
@@ -42,6 +56,12 @@ class Field(object):
             return deep_get(self.target, dct, self.target_sep)
         else:
             return simple_get(self.target, dct)
+
+    def set(self, dct, value):
+        if self.target and self.target_sep in self.target:
+            deep_set(self.target, dct, self.target_sep, value)
+        else:
+            simple_set(self.target, dct, value)
 
 
 class EmbeddedStoreField(Field):
@@ -102,10 +122,27 @@ class Store(object):
             try:
                 return attr.get(self.data)
             except (KeyError,):
-                raise AttributeError("'%s' datastore lookup failed for '%s'" %
+                raise AttributeError("'%s' store lookup failed for '%s'" %
                     (self.__class__.__name__, attr.target))
         else:
             return attr
+
+    def __setattr__(self, name, value):
+        if name in self.fields:
+            attr = getattr(self, name)
+            if isinstance(attr, (EmbeddedStoreField,)):
+                # embedded stores are not directly settable
+                raise TypeError("'%s' store does not support %s assignment" %
+                        (self.__class__.__name__, EmbeddedStoreField.__name__))
+            elif isinstance(attr, (Field,)):
+                # if it's a field, set the value in the model data
+                try:
+                    attr.set(self.data, value)
+                except (KeyError,):
+                    raise AttributeError("'%s' store lookup failed for '%s'" %
+                        (self.__class__.__name__, attr.target))
+        else:
+            super(Store, self).__setattr__(name, value)
 
 
 class CollectionStore(Store):
