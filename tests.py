@@ -40,7 +40,12 @@ DATA = {
   "money": {
     "amount": 0.99,
     "currency": "USD"
-  }
+  },
+  "xzibit": [{
+    "foo": {
+      "bar": "some"
+    }
+  }]
 }
 
 
@@ -131,6 +136,16 @@ class BarrelTestCase(TestCase):
         class Foo(Store): pass
         c = CollectionStore(Foo, self.raw_data["externalUserIdentifiers"])
         self.assertEqual(len(c), len(self.raw_data["externalUserIdentifiers"]))
+
+    def testEmbeddedCollectionStoreFieldData(self):
+        """Nested `EmbeddedStoreField` store `data` attribute has correct data for target"""
+        class Bar(Store):
+            bar = Field('bar')
+        class Foo(Store):
+            foo = EmbeddedStoreField('foo', Bar)
+        f = EmbeddedStoreField('xzibit', Foo, is_array=True)
+        f.set_store_data(self.raw_data)
+        self.assertEqual(f.store[0].foo.bar, self.raw_data["xzibit"][0]["foo"]["bar"])
 
     def testStoreWithEmbeddedStoreFieldCollection(self):
         """`Store` propagates data to the embedded collection store"""

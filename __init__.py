@@ -51,7 +51,6 @@ class EmbeddedStoreField(Field):
     """
     def __init__(self, target, store_class, is_array=False):
         self.store_class = store_class
-        self.store = []
         if is_array:
             self.store = CollectionStore(store_class)
         else:
@@ -93,11 +92,11 @@ class Store(object):
     data = property(_get_data, _set_data, _del_data)
 
     def __getattribute__(self, name):
-        getattr = super(Store, self).__getattribute__
-        attr = getattr(name)
+        selfattr = super(Store, self).__getattribute__
+        attr = selfattr(name)
         if isinstance(attr, (EmbeddedStoreField,)):
             # in case of embedded store, return the store instead of the field
-            return getattr('fields')[name].store
+            return selfattr('fields')[name].store
         elif isinstance(attr, (Field,)):
             # if it's a field, fetch the value in the model data and return it
             try:
@@ -113,9 +112,10 @@ class CollectionStore(Store):
     """Handles collection of stores and provide array-like interface to
     access them.
     """
-    def __init__(self, store_class, data=[]):
+    def __init__(self, store_class, data=None):
+        if data is None:
+            data = []
         self.store_class = store_class
-        self.stores = []
         self.data = data
 
     def _get_data(self):
@@ -127,7 +127,7 @@ class CollectionStore(Store):
             store = self.store_class(d)
             for f in store.fields.values():
                 if isinstance(f, (EmbeddedStoreField,)):
-                    f.set_store_data(data)
+                    f.set_store_data(d)
             self.stores.append(store)
 
     def _del_data(self):
