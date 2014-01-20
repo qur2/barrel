@@ -18,12 +18,22 @@ class RpcMixin(object):
 
 
 def rpc_call(func):
-    """Handle RPC calls using the wrapped class method returned signature.
-    The class passed to the wrapped class method is used as the data converter.
+    """Handle RPC calls using the wrapped classmethod returned signature.
+    Handles multiple rpc signatures and returns the last result.
     """
     @wraps(func)
     def inner(cls, *args, **kwargs):
         sig = func(cls, *args, **kwargs)
-        interface = getattr(reaktor(), sig.interface)
-        return getattr(interface, sig.method)(*sig.args, data_converter=sig.data_converter)
+        void_sigs = ()
+        if not isinstance(sig, RpcSignature):
+            void_sigs = sig[:-1]
+            sig = sig[-1]
+        for s in void_sigs:
+            do_rpc_call(s)
+        return do_rpc_call(sig)
     return inner
+
+
+def do_rpc_call(sig):
+    interface = getattr(reaktor(), sig.interface)
+    return getattr(interface, sig.method)(*sig.args, data_converter=sig.data_converter)
