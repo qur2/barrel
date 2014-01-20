@@ -76,6 +76,9 @@ class Field(object):
         else:
             simple_set(self.target, dct, value)
 
+    def __str__(self):
+        return "<%s.%s target=%s>" % (self.__module__, self.__class__.__name__, self.target)
+
 
 class EmbeddedStoreField(Field):
     """Field that enables to embed a one or multiple dict datastores.
