@@ -1,11 +1,24 @@
-"""When I die I want to decompose in a barrel of porter and have it served in all the pubs in Dublin. J. P. Donleavy"""
+"""This module enables model-like encapsulation of big dict structure (like JSON data).
+
+    When I die I want to decompose in a barrel of porter and have it served in all the pubs in Dublin.
+    J. P. Donleavy
+
+The goal is to *not* map the underlying dict but just wrap it in a programmer-friendly structure
+to allow attribute-like access and field aliasing.
+
+Field aliasing enables to virtually:
+
+* change key names
+* modify the apparent structure of the dict
+"""
 from iso8601 import iso8601
 from money import Money
 
 
 class StoreMeta(type):
-    """Metaclass that farms class attributes and gather the ones that are of
-    type Field in the `fields` attributes.
+    """Metaclass that farms and gather `Field`-type attributes in a new `fields`
+    attributes. This `fields` attribute later helps to easily identify if an
+    attribute is `Field` typed without iterating through all attributes.
     """
     def __new__(cls, name, parents, dct):
         fields = {}
