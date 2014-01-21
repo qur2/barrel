@@ -1,4 +1,4 @@
-from . import Store, Field, BooleanField, DateField, MoneyField, EmbeddedStoreField, StoreMeta
+from . import Store, Field, BooleanField, DateField, MoneyField, EmbeddedStoreField
 from rpc import RpcMixin, rpc_call
 
 
@@ -21,6 +21,22 @@ class Document(Store, RpcMixin):
 
 class Voucher(Store, RpcMixin):
     id = Field(target='caca')
+
+
+class Item(Store):
+    """Base item class, to be extended for specific purposes."""
+    total = MoneyField(target='positionTotal')
+    net_total = MoneyField(target='positionNetTotal')
+    tax_total = MoneyField(target='positionTaxTotal')
+    undiscounted_total = MoneyField(target='undiscountedPositionTotal')
+
+
+class DocumentItem(Item):
+    document = EmbeddedStoreField(target='item', store_class=Document)
+
+
+class VoucherItem(Item):
+    voucher = EmbeddedStoreField(target='item', store_class=Voucher)
 
 
 def item_factory(data=None):
@@ -48,22 +64,9 @@ class CheckoutProperties(Store):
 class Basket(Store, RpcMixin):
     interface = 'WSShopMgmt'
 
-    class Payment(Store):
-        merchant_account = Field(target='merchantAccount')
-        merchant_ref = Field(target='merchantReference')
-
-    class Item(Store):
-        """Base item class, to be extended for specific purposes."""
-        total = MoneyField(target='positionTotal')
-        net_total = MoneyField(target='positionNetTotal')
-        tax_total = MoneyField(target='positionTaxTotal')
-        undiscounted_total = MoneyField(target='undiscountedPositionTotal')
-
-    class DocumentItem(Item):
-        document = EmbeddedStoreField(target='item', store_class=Document)
-
-    class VoucherItem(Item):
-        voucher = EmbeddedStoreField(target='item', store_class=Voucher)
+    # class Payment(Store):
+    #     merchant_account = Field(target='merchantAccount')
+    #     merchant_ref = Field(target='merchantReference')
 
     id = Field(target='ID')
     checked_out = BooleanField(target='checkedOut')
