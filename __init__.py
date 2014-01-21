@@ -12,7 +12,7 @@ Field aliasing enables to virtually:
 * modify the apparent structure of the dict
 """
 from iso8601 import iso8601
-from money import Money
+# from money import Money
 
 
 class StoreMeta(type):
@@ -226,8 +226,10 @@ class IntegerField(Field):
         return int(value)
 
 
-class MoneyField(Field):
-    """Handles money dictionary values - amount and currency. Returns `Money` object"""
-    def get(self, dct):
-        value = super(MoneyField, self).get(dct)
-        return Money(**value)
+# This field is not used at the moment because of the reaktor price handling inconsistency.
+# Kept here for the better __future__.
+# class MoneyField(Field):
+#     """Handles money dictionary values - amount and currency. Expects a dictionary. Returns `Money` object"""
+#     def get(self, dct):
+#         value = super(MoneyField, self).get(dct)
+#         return Money(**value)

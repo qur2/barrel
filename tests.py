@@ -3,6 +3,7 @@ from copy import deepcopy
 from datetime import datetime
 from decimal import Decimal
 from django.test import TestCase
+from unittest import skip
 
 
 DATA = {
@@ -225,6 +226,7 @@ class BarrelTestCase(TestCase):
         u = User(self.raw_data)
         self.assertTrue(isinstance(u.id, int))
 
+    @skip('`MoneyField` is not supported yet')
     def testMoneyField(self):
         """`MoneyField` returns `Money` object"""
         class User(Store):
@@ -232,6 +234,7 @@ class BarrelTestCase(TestCase):
         u = User(self.raw_data)
         self.assertTrue(isinstance(u.money, Money))
 
+    @skip('`MoneyField` is not supported yet')
     def testMoneyFieldAmount(self):
         """`MoneyField` amount is correct"""
         class User(Store):
@@ -239,6 +242,7 @@ class BarrelTestCase(TestCase):
         u = User(self.raw_data)
         self.assertEqual(u.money.amount, Decimal(self.raw_data['money']['amount']).quantize(Decimal("0.00")))
 
+    @skip('`MoneyField` is not supported yet')
     def testMoneyFieldCurrency(self):
         """`MoneyField` currency is correct"""
         class User(Store):
