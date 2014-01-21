@@ -226,6 +226,13 @@ class IntegerField(Field):
         return int(value)
 
 
+class FloatField(Field):
+    """Handles float values - returns float"""
+    def get(self, dct):
+        value = super(FloatField, self).get(dct)
+        return float(value)
+
+
 # This field is not used at the moment because of the reaktor price handling inconsistency.
 # Kept here for the better __future__.
 # class MoneyField(Field):

@@ -47,7 +47,8 @@ DATA = {
     "foo": {
       "bar": "some"
     }
-  }]
+  }],
+  "someFloatValue": '0.605714'
 }
 
 
@@ -225,6 +226,13 @@ class BarrelTestCase(TestCase):
             id = IntegerField(target='userID')
         u = User(self.raw_data)
         self.assertTrue(isinstance(u.id, int))
+
+    def testFloatField(self):
+        """`FloatField` returns float"""
+        class User(Store):
+            value = FloatField(target='someFloatValue')
+        u = User(self.raw_data)
+        self.assertTrue(isinstance(u.value, float))
 
     @skip('`MoneyField` is not supported yet')
     def testMoneyField(self):
