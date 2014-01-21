@@ -25,6 +25,10 @@ class StoreMeta(type):
         for k, f in dct.iteritems():
             if isinstance(f, (Field,)):
                 fields[k] = f
+        # adding parents' fields
+        for parent in parents:
+            if hasattr(parent, 'fields'):
+                fields.update(parent.fields)
         dct['fields'] = fields
         return super(StoreMeta, cls).__new__(cls, name, parents, dct)
 
@@ -176,6 +180,11 @@ class CollectionStore(Store):
 
     def _set_data(self, data):
         self.stores = []
+        # another patch to overcome reaktor inconsistency.
+        # in some cases reaktor returns dictionary of objects in places where the array is expected
+        # so we ignore the keys and use the values as an array
+        if isinstance(data, dict):
+            data = data.values()
         for d in data:
             store = self.store_class(d)
             for f in store.fields.values():
