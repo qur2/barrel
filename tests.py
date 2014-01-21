@@ -220,10 +220,10 @@ class BarrelTestCase(TestCase):
         u = User(self.raw_data)
         self.assertTrue(isinstance(u.password_expiration, datetime))
 
-    def testIntegerField(self):
-        """`IntegerField` returns int"""
+    def testIntField(self):
+        """`IntField` returns int"""
         class User(Store):
-            id = IntegerField(target='userID')
+            id = IntField(target='userID')
         u = User(self.raw_data)
         self.assertTrue(isinstance(u.id, int))
 

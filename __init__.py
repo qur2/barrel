@@ -228,10 +228,10 @@ class DateField(Field):
         return iso8601.parse_date(value)
 
 
-class IntegerField(Field):
+class IntField(Field):
     """Handles integer values - returns int"""
     def get(self, dct):
-        value = super(IntegerField, self).get(dct)
+        value = super(IntField, self).get(dct)
         return int(value)
 
 
