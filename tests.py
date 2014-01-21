@@ -234,6 +234,13 @@ class BarrelTestCase(TestCase):
         u = User(self.raw_data)
         self.assertTrue(isinstance(u.value, float))
 
+    def testLongIntField(self):
+        """`LongIntField` returns long"""
+        class User(Store):
+            id = LongIntField(target='userID')
+        u = User(self.raw_data)
+        self.assertTrue(isinstance(u.id, long))
+
     @skip('`MoneyField` is not supported yet')
     def testMoneyField(self):
         """`MoneyField` returns `Money` object"""

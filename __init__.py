@@ -233,6 +233,13 @@ class FloatField(Field):
         return float(value)
 
 
+class LongIntField(Field):
+    """Handles long integer values - returns long"""
+    def get(self, dct):
+        value = super(LongIntField, self).get(dct)
+        return long(value)
+
+
 # This field is not used at the moment because of the reaktor price handling inconsistency.
 # Kept here for the better __future__.
 # class MoneyField(Field):
