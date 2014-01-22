@@ -130,12 +130,32 @@ class Item(Store):
     def undiscounted_total(self):
         return Money(amount=self._undiscounted_total.amount, currency=self._undiscounted_total.currency)
 
+    @classmethod
+    def add_to_basket(cls, token, basket_id, doc_id):
+        """A convenience shortcut to provide nicer API."""
+        return cls.set_basket_quantity(token, basket_id, doc_id, 1)
 
-class DocumentItem(Item):
+    @classmethod
+    def remove_from_basket(cls, token, basket_id, doc_id):
+        """A convenience shortcut to provide nicer API."""
+        return cls.set_basket_quantity(token, basket_id, doc_id, 0)
+
+
+class DocumentItem(Item, RpcMixin):
+    interface = 'WSDocMgmt'
     document = EmbeddedStoreField(target='item', store_class=Document)
 
+    @classmethod
+    @rpc_call
+    def set_basket_quantity(cls, token, basket_id, doc_id, quantity):
+        """Reaktor `WSDocMgmt.changeDocumentBasketPosition` call.
+        If `quantity` is 0, then removes the document from the basket.
+        If `quantity` is not 0, then adds the document into the basket.
+        """
+        return cls.signature(method='changeDocumentBasketPosition', args=[token, basket_id, doc_id, quantity])
 
-class VoucherItem(Item):
+
+class VoucherItem(Item, RpcMixin):
     voucher = EmbeddedStoreField(target='item', store_class=Voucher)
 
 
@@ -198,13 +218,13 @@ class Basket(Store, RpcMixin):
 
     @classmethod
     @rpc_call
-    def get_by_id(cls, token, bid):
+    def get_by_id(cls, token, basket_id):
         # "tJCodCILTxi3VsRJ2FILYfgbt00sj8-QP4jOxlNYFYD@"
         # "beogb97"
-        return cls.signature(method='getBasket', args=[token, bid])
+        return cls.signature(method='getBasket', args=[token, basket_id])
 
     @classmethod
     @rpc_call
-    def checkout(cls, token, bid, checkout_props):
+    def checkout(cls, token, basket_id, checkout_props):
         # checkoutBasket is deprecated
-        return cls.signature(method='checkoutBasket', args=[token, bid, checkout_props.data])
+        return cls.signature(method='checkoutBasket', args=[token, basket_id, checkout_props.data])
