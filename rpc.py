@@ -1,9 +1,15 @@
 from collections import namedtuple
-from functools import wraps
+from functools import wraps, partial
 from libs.own.holon import reaktor
 
 
 RpcSignature = namedtuple('RpcSignature', 'interface, method, data_converter, args')
+
+
+def check_data(data_converter, dct):
+    """Store class method returns `None` in case the reaktor call returns `void`."""
+    if dct:
+        return data_converter(dct)
 
 
 class RpcMixin(object):
@@ -36,4 +42,5 @@ def rpc_call(func):
 
 def do_rpc_call(sig):
     interface = getattr(reaktor(), sig.interface)
-    return getattr(interface, sig.method)(*sig.args, data_converter=sig.data_converter)
+    converter = partial(check_data, sig.data_converter)
+    return getattr(interface, sig.method)(*sig.args, data_converter=converter)
