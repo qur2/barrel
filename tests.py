@@ -145,7 +145,19 @@ class BarrelTestCase(TestCase):
 
         u = User(local_data)
         u.settings.locale = 'FU'
-        self.assertEqual(u.settings.locale, local_data["settings"]["com.bookpac.user.settings.locale"])
+        self.assertEqual(u.settings.locale, 'FU')
+
+    def testEmbeddedStoreCache(self):
+        """Setting data for `EmbeddedStoreField` modifies the data for the parent `Store`."""
+        local_data = deepcopy(self.raw_data)
+        class UserSettings(Store):
+            locale = Field(target='com.bookpac.user.settings.locale')
+        class User(Store):
+            settings = EmbeddedStoreField(target='settings', store_class=UserSettings)
+
+        u = User(local_data)
+        u.settings.locale = 'FU'
+        self.assertEqual(u.data["settings"]["com.bookpac.user.settings.locale"], 'FU')
 
     def testCollectionStore(self):
         """`CollectionStore` items have the given store class"""

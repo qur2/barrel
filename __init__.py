@@ -20,17 +20,17 @@ class StoreMeta(type):
     attributes. This `fields` attribute later helps to easily identify if an
     attribute is `Field` typed without iterating through all attributes.
     """
-    def __new__(cls, name, parents, dct):
+    def __new__(cls, name, bases, attrs):
         fields = {}
-        for k, f in dct.iteritems():
+        for k, f in attrs.iteritems():
             if isinstance(f, (Field,)):
                 fields[k] = f
         # adding parents' fields
-        for parent in parents:
+        for parent in bases:
             if hasattr(parent, 'fields'):
                 fields.update(parent.fields)
-        dct['fields'] = fields
-        return super(StoreMeta, cls).__new__(cls, name, parents, dct)
+        attrs['fields'] = fields
+        return super(StoreMeta, cls).__new__(cls, name, bases, attrs)
 
 
 def simple_get(key, dictionary):
@@ -110,23 +110,28 @@ class Store(object):
         if data is None:
             data = {}
         self.data = data
+        self._embedded_stores_cache = {}
 
     def __getattribute__(self, name):
         selfattr = super(Store, self).__getattribute__
         attr = selfattr(name)
+        # in case of embedded store, return the store instead of the field
         if isinstance(attr, (EmbeddedStoreField,)):
-            # in case of embedded store, return the store instead of the field
-            if attr.target is False:
-                data = self.data
-            else:
-                data = self.data[attr.target] if attr.target in self.data else {}
-            if attr.is_array:
-                store = CollectionStore(attr.store_class, data)
-            else:
-                store = attr.store_class(data)
-            return store
+            # making attribute access less costly
+            # no need to create the instance of store on every access
+            if name not in self._embedded_stores_cache:
+                if attr.target is False:
+                    data = self.data
+                else:
+                    data = self.data[attr.target] if attr.target in self.data else {}
+                if attr.is_array:
+                    store = CollectionStore(attr.store_class, data)
+                else:
+                    store = attr.store_class(data)
+                self._embedded_stores_cache[name] = store
+            return self._embedded_stores_cache[name]
+        # if it's a field, fetch the value in the model data and return it
         elif isinstance(attr, (Field,)):
-            # if it's a field, fetch the value in the model data and return it
             try:
                 return attr.get(self.data)
             except (KeyError,):
@@ -137,13 +142,13 @@ class Store(object):
 
     def __setattr__(self, name, value):
         if name in self.fields:
-            attr = getattr(self, name)
+            attr = self.fields[name]
+            # embedded stores are not directly settable
             if isinstance(attr, (EmbeddedStoreField,)):
-                # embedded stores are not directly settable
                 raise TypeError("'%s' store does not support %s assignment" %
                         (self.__class__.__name__, EmbeddedStoreField.__name__))
+            # if it's a field, set the value in the model data
             elif isinstance(attr, (Field,)):
-                # if it's a field, set the value in the model data
                 try:
                     attr.set(self.data, value)
                 except (KeyError,):
