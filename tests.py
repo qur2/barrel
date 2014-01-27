@@ -125,20 +125,6 @@ class BarrelTestCase(TestCase):
         f = EmbeddedStoreField('target', Foo, is_array=True)
         self.assertEqual(f.store.__class__.__name__, 'CollectionStore')
 
-    def testEmbeddedStoreFieldData(self):
-        """`EmbeddedStoreField` store `data` attribute has correct data for target"""
-        class Foo(Store): pass
-        f = EmbeddedStoreField('userID', Foo)
-        f.set_store_data(self.raw_data)
-        self.assertEqual(f.store.data, self.raw_data["userID"])
-
-    def testEmbeddedStoreFieldDataNoTarget(self):
-        """`EmbeddedStoreField` store `data` attribute has correct data if no target"""
-        class Foo(Store): pass
-        f = EmbeddedStoreField(False, Foo)
-        f.set_store_data(self.raw_data)
-        self.assertEqual(f.store.data, self.raw_data)
-
     def testStoreWithEmbeddedStoreField(self):
         """`Store` propagates data to the embedded store"""
         class UserSettings(Store):
@@ -174,14 +160,15 @@ class BarrelTestCase(TestCase):
         self.assertEqual(len(c), len(self.raw_data["externalUserIdentifiers"]))
 
     def testEmbeddedCollectionStoreFieldData(self):
-        """Nested `EmbeddedStoreField` store `data` attribute has correct data for target"""
+        """Nested `EmbeddedStoreField` are instantiated with correct data"""
         class Bar(Store):
             bar = Field('bar')
         class Foo(Store):
             foo = EmbeddedStoreField('foo', Bar)
-        f = EmbeddedStoreField('xzibit', Foo, is_array=True)
-        f.set_store_data(self.raw_data)
-        self.assertEqual(f.store[0].foo.bar, self.raw_data["xzibit"][0]["foo"]["bar"])
+        class Buzz(Store):
+            fooes = EmbeddedStoreField('xzibit', Foo, is_array=True)
+        b = Buzz(self.raw_data)
+        self.assertEqual(b.fooes[0].foo.bar, self.raw_data["xzibit"][0]["foo"]["bar"])
 
     def testStoreWithEmbeddedStoreFieldCollection(self):
         """`Store` propagates data to the embedded collection store"""

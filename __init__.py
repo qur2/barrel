@@ -97,11 +97,9 @@ class EmbeddedStoreField(Field):
             self.store = store_class()
         super(EmbeddedStoreField, self).__init__(target)
 
-    def set_store_data(self, data):
-        if self.target is False:
-            self.store.data = data
-        else:
-            self.store.data = data[self.target] if self.target in data else {}
+    @property
+    def is_array(self):
+        return isinstance(self.store, CollectionStore)
 
 
 class Store(object):
@@ -111,32 +109,22 @@ class Store(object):
     def __init__(self, data=None):
         if data is None:
             data = {}
-        # this uses the property to set the _data attribute
         self.data = data
-
-    def _get_data(self):
-        return self._data
-
-    def _set_data(self, data):
-        self._data = data
-        for f in self.fields.values():
-            if isinstance(f, (EmbeddedStoreField,)):
-                f.set_store_data(data)
-
-    def _del_data(self):
-        del self._data
-        for f in self.fields.values():
-            if isinstance(f, (EmbeddedStoreField,)):
-                del f.store.data
-
-    data = property(_get_data, _set_data, _del_data)
 
     def __getattribute__(self, name):
         selfattr = super(Store, self).__getattribute__
         attr = selfattr(name)
         if isinstance(attr, (EmbeddedStoreField,)):
             # in case of embedded store, return the store instead of the field
-            return selfattr('fields')[name].store
+            if attr.target is False:
+                data = self.data
+            else:
+                data = self.data[attr.target] if attr.target in self.data else {}
+            if attr.is_array:
+                store = CollectionStore(attr.store_class, data)
+            else:
+                store = attr.store_class(data)
+            return store
         elif isinstance(attr, (Field,)):
             # if it's a field, fetch the value in the model data and return it
             try:
@@ -173,49 +161,27 @@ class CollectionStore(Store):
         if data is None:
             data = []
         self.store_class = store_class
-        self.data = data
-
-    def _get_data(self):
-        return self._data
-
-    def _set_data(self, data):
-        self.stores = []
         # another patch to overcome reaktor inconsistency.
         # in some cases reaktor returns dictionary of objects in places where the array is expected
         # so we ignore the keys and use the values as an array
         if isinstance(data, dict):
             data = data.values()
-        for d in data:
-            store = self.store_class(d)
-            for f in store.fields.values():
-                if isinstance(f, (EmbeddedStoreField,)):
-                    f.set_store_data(d)
-            self.stores.append(store)
-
-    def _del_data(self):
-        del self._data
-        for store in self.stores:
-            for f in store.fields.values():
-                if isinstance(f, (EmbeddedStoreField,)):
-                    del f.store.data
-        self.stores = []
-
-    data = property(_get_data, _set_data, _del_data)
+        self.data = data
 
     def __getitem__(self, i):
-        return self.stores[i]
+        return self.store_class(self.data[i])
 
     def __len__(self):
-        return len(self.stores)
+        return len(self.data)
 
 
 class BooleanField(Field):
     """Handles the boolean values"""
     def get(self, dct):
         value = super(BooleanField, self).get(dct)
-        if value == 'true':
+        if value == 'true' or value is True:
             return True
-        elif value == 'false':
+        elif value == 'false' or value is False:
             return False
         else:
             raise ValueError("Cannot convert to boolean: %s" % value)
