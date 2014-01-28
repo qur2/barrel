@@ -47,12 +47,14 @@ class Document(Store, RpcMixin):
         publication_date = DateField(target='publication_date')
         publisher = Field(target='publisher')
         size = IntField(target='size')
+        subtitle = Field(target='subtitle')
         tax_group = Field(target='tax_group')
         title = Field(target='title')
         year = IntField(target='year')
         large_cover_url = Field(target='cover_image_url_large')
         normal_cover_url = Field(target='cover_image_url_normal')
         medium_cover_url = Field(target='cover_image_url_medium')
+        undiscounted_price = FloatField(target='undiscounted_price')
 
     # probably should be moved outside of this class
     class Category(Store):
@@ -96,6 +98,22 @@ class Document(Store, RpcMixin):
     def price(self):
         return Money(amount=self.attributes.price, currency=self.attributes.currency)
 
+    @property
+    def undiscounted_price(self):
+        return Money(amount=self.attributes.undiscounted_price, currency=self.attributes.currency)
+
+    @classmethod
+    @rpc_call
+    def get_by_id(cls, token, doc_id):
+        """Returns `Document` instance for the given id."""
+        return cls.signature(method='getDocument', args=[token, doc_id])
+
+    @classmethod
+    @rpc_call
+    def get_user_doc_id(cls, token, doc_id):
+        """Returns user document id for the catalog document id if any."""
+        return cls.signature(method='getUserDocumentID', data_converter=lambda d: d, args=[token, doc_id])
+
 
 class ReaktorMoney(Store):
     """Helper class to use with the new reaktor price fields."""
@@ -131,14 +149,14 @@ class Item(Store):
         return Money(amount=self._undiscounted_total.amount, currency=self._undiscounted_total.currency)
 
     @classmethod
-    def add_to_basket(cls, token, basket_id, doc_id):
+    def add_to_basket(cls, token, basket_id, item_id):
         """A convenience shortcut to provide nicer API."""
-        return cls.set_basket_quantity(token, basket_id, doc_id, 1)
+        return cls.set_basket_quantity(token, basket_id, item_id, 1)
 
     @classmethod
-    def remove_from_basket(cls, token, basket_id, doc_id):
+    def remove_from_basket(cls, token, basket_id, item_id):
         """A convenience shortcut to provide nicer API."""
-        return cls.set_basket_quantity(token, basket_id, doc_id, 0)
+        return cls.set_basket_quantity(token, basket_id, item_id, 0)
 
 
 class DocumentItem(Item, RpcMixin):
@@ -151,6 +169,7 @@ class DocumentItem(Item, RpcMixin):
         """Reaktor `WSDocMgmt.changeDocumentBasketPosition` call.
         If `quantity` is 0, then removes the document from the basket.
         If `quantity` is not 0, then adds the document into the basket.
+        Returns None.
         """
         return cls.signature(method='changeDocumentBasketPosition', args=[token, basket_id, doc_id, quantity])
 
@@ -188,6 +207,11 @@ class Basket(Store, RpcMixin):
     #     merchant_account = Field(target='merchantAccount')
     #     merchant_ref = Field(target='merchantReference')
 
+    class PaymentForm(Store):
+        form = Field(target='com.bookpac.server.shop.payment.paymentform')
+        recurring = Field(target='com.bookpac.server.shop.payment.paymentform.recurring')
+        worecurring = Field(target='com.bookpac.server.shop.payment.paymentform.worecurring')
+
     id = Field(target='ID')
     checked_out = BooleanField(target='checkedOut')
     creation_date = DateField(target='creationTime')
@@ -198,7 +222,9 @@ class Basket(Store, RpcMixin):
     _tax_total = EmbeddedStoreField(target='taxTotal', store_class=ReaktorMoney)
     _undiscounted_total = EmbeddedStoreField(target='undiscountedTotal', store_class=ReaktorMoney)
     # payment_props = EmbeddedStoreField(target='paymentProperties', store_class=Payment)
+    payment_forms = EmbeddedStoreField(target='paymentForm', store_class=PaymentForm)
     items = EmbeddedStoreField(target='positions', store_class=item_factory, is_array=True)
+    authorized_payment_methods = Field(target='authorizedPaymentMethods')
 
     @property
     def total(self):
@@ -216,6 +242,40 @@ class Basket(Store, RpcMixin):
     def undiscounted_total(self):
         return Money(amount=self._undiscounted_total.amount, currency=self._undiscounted_total.currency)
 
+    @property
+    def document_items(self):
+        """A property that allows to iterate over the document items.
+        Returns generator.
+        """
+        for item in self.items:
+            if isinstance(item, DocumentItem):
+                yield item
+
+    @property
+    def voucher_items(self):
+        """A property that allows to iterate over the voucher items.
+        Returns generator.
+        """
+        for item in self.items:
+            if isinstance(item, VoucherItem):
+                yield item
+
+    @property
+    def documents(self):
+        """A property that allows to iterate over the documents.
+        Returns generator.
+        """
+        for item in self.document_items:
+            yield item.document
+
+    @property
+    def vouchers(self):
+        """A property that allows to iterate over the vouchers.
+        Returns generator.
+        """
+        for item in self.voucher_items:
+            yield item.voucher
+
     @classmethod
     @rpc_call
     def get_by_id(cls, token, basket_id):
@@ -228,3 +288,8 @@ class Basket(Store, RpcMixin):
     def checkout(cls, token, basket_id, checkout_props):
         # checkoutBasket is deprecated
         return cls.signature(method='checkoutBasket', args=[token, basket_id, checkout_props.data])
+
+    @classmethod
+    @rpc_call
+    def create(cls, token, marker=None):
+        return cls.signature(method='getNewBasket', args=[token, marker])
