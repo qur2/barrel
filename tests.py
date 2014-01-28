@@ -119,12 +119,6 @@ class BarrelTestCase(TestCase):
         f = EmbeddedStoreField('target', Foo)
         self.assertEqual(f.store.__class__.__name__, 'Foo')
 
-    def testEmbeddedStoreFieldCollection(self):
-        """`EmbeddedStoreField` has the `store` attribute of the `CollectionStore` type in case of an array"""
-        class Foo(Store): pass
-        f = EmbeddedStoreField('target', Foo, is_array=True)
-        self.assertEqual(f.store.__class__.__name__, 'CollectionStore')
-
     def testStoreWithEmbeddedStoreField(self):
         """`Store` propagates data to the embedded store"""
         class UserSettings(Store):
@@ -147,8 +141,8 @@ class BarrelTestCase(TestCase):
         u.settings.locale = 'FU'
         self.assertEqual(u.settings.locale, 'FU')
 
-    def testEmbeddedStoreCache(self):
-        """Setting data for `EmbeddedStoreField` modifies the data for the parent `Store`."""
+    def testEmbeddedStoreData(self):
+        """Setting data for `EmbeddedStoreField` modifies the data for the parent `Store`"""
         local_data = deepcopy(self.raw_data)
         class UserSettings(Store):
             locale = Field(target='com.bookpac.user.settings.locale')
@@ -159,17 +153,40 @@ class BarrelTestCase(TestCase):
         u.settings.locale = 'FU'
         self.assertEqual(u.data["settings"]["com.bookpac.user.settings.locale"], 'FU')
 
+    def testEmbeddedStoreCache(self):
+        """Embedded stores are added to cache lazily upon access"""
+        class UserSettings(Store):
+            locale = Field(target='com.bookpac.user.settings.locale')
+        class ReaktorMoney(Store):
+            amount = FloatField(target='amount')
+            currency = Field(target='currency')
+        class User(Store):
+            settings = EmbeddedStoreField(target='settings', store_class=UserSettings)
+            money = EmbeddedStoreField(target='money', store_class=ReaktorMoney)
+
+        u = User(self.raw_data)
+        u.money.amount
+        self.assertEqual(len(u._embedded_stores_cache), 1)
+
     def testCollectionStore(self):
         """`CollectionStore` items have the given store class"""
         class Foo(Store): pass
-        c = CollectionStore(Foo, self.raw_data["externalUserIdentifiers"])
-        self.assertEqual(c[0].__class__.__name__, 'Foo')
+        a = CollectionStore(data=self.raw_data["externalUserIdentifiers"], store_class=Foo)
+        self.assertEqual(a[0].__class__.__name__, 'Foo')
 
     def testCollectionStoreLength(self):
-        """`CollectionStore` looks like an list"""
-        class Foo(Store): pass
-        c = CollectionStore(Foo, self.raw_data["externalUserIdentifiers"])
-        self.assertEqual(len(c), len(self.raw_data["externalUserIdentifiers"]))
+        """Array `Store` looks like an list"""
+        a = CollectionStore(data=self.raw_data["externalUserIdentifiers"], store_class=Store)
+        self.assertEqual(len(a), len(self.raw_data["externalUserIdentifiers"]))
+
+    def testCollectionStoreIterable(self):
+        """Array `Store` can be iterated over"""
+        a = CollectionStore(data=self.raw_data["externalUserIdentifiers"], store_class=Store)
+        try:
+            for i in a:
+                pass
+        except TypeError as e:
+            self.fail("Iterating over array `Store` raised TypeError: %s" % e)
 
     def testEmbeddedCollectionStoreFieldData(self):
         """Nested `EmbeddedStoreField` are instantiated with correct data"""

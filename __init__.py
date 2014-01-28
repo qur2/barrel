@@ -91,15 +91,12 @@ class EmbeddedStoreField(Field):
     """
     def __init__(self, target, store_class, is_array=False):
         self.store_class = store_class
+        self.is_array = is_array
         if is_array:
             self.store = CollectionStore(store_class)
         else:
             self.store = store_class()
         super(EmbeddedStoreField, self).__init__(target)
-
-    @property
-    def is_array(self):
-        return isinstance(self.store, CollectionStore)
 
 
 class Store(object):
@@ -159,22 +156,22 @@ class Store(object):
 
 
 class CollectionStore(Store):
-    """Handles collection of stores and provide array-like interface to
-    access them.
+    """Handles collection of stores and provide array-like interface to access them.
     """
+
     def __init__(self, store_class, data=None):
         if data is None:
             data = []
         self.store_class = store_class
-        # another patch to overcome reaktor inconsistency.
-        # in some cases reaktor returns dictionary of objects in places where the array is expected
-        # so we ignore the keys and use the values as an array
-        if isinstance(data, dict):
-            data = data.values()
-        self.data = data
+        return super(CollectionStore, self).__init__(data)
 
-    def __getitem__(self, i):
-        return self.store_class(self.data[i])
+    def __getitem__(self, index):
+        if index not in self._embedded_stores_cache:
+            self._embedded_stores_cache[index] = self.store_class(self.data[index])
+        return self._embedded_stores_cache[index]
+
+    def __iter__(self):
+        return (self[k] for k in xrange(len(self)))
 
     def __len__(self):
         return len(self.data)
