@@ -1,5 +1,6 @@
 from . import Store, Field, BooleanField, DateField, IntField, FloatField, LongIntField, EmbeddedStoreField
 from rpc import RpcMixin, rpc_call
+from django.utils.translation import ugettext as _
 from money import Money
 
 
@@ -121,8 +122,23 @@ class ReaktorMoney(Store):
     currency = Field(target='currency')
 
 
+# FIXME: this class is used as embedded for `voucherApplications`
+# thus it might differ from the voucher that comes in the basket position
 class Voucher(Store, RpcMixin):
-    id = Field(target='caca')
+    code = LongIntField(target='code')
+    text = Field(target='text')
+    _initial_amount = EmbeddedStoreField(target='initialAmount', store_class=ReaktorMoney)
+    _amount = EmbeddedStoreField(target='amount', store_class=ReaktorMoney)
+    # not sure if it is needed
+    # java_cls = Field(target='javaClass')
+
+    @property
+    def initial_amount(self):
+        return Money(amount=self._initial_amount.amount, currency=self._initial_amount.currency)
+
+    @property
+    def amount(self):
+        return Money(amount=self._amount.amount, currency=self._amount.currency)
 
 
 class Item(Store):
@@ -203,9 +219,38 @@ class CheckoutProperties(Store):
 class Basket(Store, RpcMixin):
     interface = 'WSShopMgmt'
 
-    # class Payment(Store):
+    # txtr to adyen mapping of payment methods;
+    # see Enum com.bookpac.server.shop.payment.PaymentMethod and adyen's Integration Manual pp 12+13 for the names
+    PAYMENT_METHODS = { "CREDITCARD" : ["visa", "mc"], "ELV":["elv"] }
+
+    PAYMENT_TRANSLATIONS = {
+        # See: SKINSTXTRCOM-2165
+        'CREDITCARD': _('Credit Card'), # "CREDITCARD should stay to be backward compatible, my son." --Stephan Noske
+        'AMEX-SSL': _('American Express'),
+        'VISA-SSL': _('Visa'),
+        'VISA_COMMERCIAL_CREDIT-SSL': _('Visa'),
+        'VISA_CREDIT-SSL': _('Visa'),
+        'visa': _('Visa'), # lowercase key, comes from Adyen
+        'ECMC-SSL': _('MasterCard'),
+        'ECMC_COMMERCIAL_CREDIT-SSL': _('MasterCard'),
+        'ECMC_CREDIT-SSL': _('MasterCard'),
+        'mc': _('MasterCard'), # lowercase key, comes from Adyen
+        'PAYPAL_EXPRESS': _('PayPal'),
+        'ELV': _('Direct Debit'),
+        'ELV-SSL': _('Direct Debit'),
+        'DINERS': _("Diner's Club"),
+        'DINERS-SSL': _("Diner's Club"),
+    }
+
+    # not sure if this is used
+    # NOTE (Iurii Kudriavtsev): this is not a complete fields definition
+    # class PaymentProperty(Store):
     #     merchant_account = Field(target='merchantAccount')
     #     merchant_ref = Field(target='merchantReference')
+
+    class AppliedVoucherItem(Store):
+        voucher = EmbeddedStoreField(target='voucher', store_class=Voucher)
+        discount = EmbeddedStoreField(target='discountAmount', store_class=ReaktorMoney)
 
     class PaymentForm(Store):
         form = Field(target='com.bookpac.server.shop.payment.paymentform')
@@ -221,10 +266,11 @@ class Basket(Store, RpcMixin):
     _net_total = EmbeddedStoreField(target='netTotal', store_class=ReaktorMoney)
     _tax_total = EmbeddedStoreField(target='taxTotal', store_class=ReaktorMoney)
     _undiscounted_total = EmbeddedStoreField(target='undiscountedTotal', store_class=ReaktorMoney)
-    # payment_props = EmbeddedStoreField(target='paymentProperties', store_class=Payment)
-    payment_forms = EmbeddedStoreField(target='paymentForm', store_class=PaymentForm)
+    # payment_props = EmbeddedStoreField(target='paymentProperties', store_class=PaymentProperty)
+    payment_forms = EmbeddedStoreField(target='paymentForms', store_class=PaymentForm)
     items = EmbeddedStoreField(target='positions', store_class=item_factory, is_array=True)
     authorized_payment_methods = Field(target='authorizedPaymentMethods')
+    applied_vouchers = EmbeddedStoreField(target='voucherApplications', store_class=AppliedVoucherItem, is_array=True)
 
     @property
     def total(self):
@@ -276,20 +322,54 @@ class Basket(Store, RpcMixin):
         for item in self.voucher_items:
             yield item.voucher
 
+    def is_authorized_for(self, payment_method):
+        """Check whether the basket is authorized for the given payment_method.
+        """
+        if payment_method in self.PAYMENT_METHODS.get("CREDITCARD") and hasattr(self, 'authorized_payment_methods'):
+            return "CREDITCARD" in self.authorized_payment_methods
+        elif payment_method in self.PAYMENT_METHODS.get("ELV") and hasattr(self, 'authorized_payment_methods'):
+            return "ELV" in self.authorized_payment_methods
+        else:
+            return False
+
+    def translate_authorized_payment_methods(self):
+        """Returns a list of human-readable authorized payment methods.
+        """
+        payment_methods = []
+        if hasattr(self, 'authorized_payment_methods'):
+            for payment_method in self.authorized_payment_methods:
+                if payment_method in self.PAYMENT_TRANSLATIONS:
+                    payment_methods.append(self.PAYMENT_TRANSLATIONS[payment_method])
+                else:
+                    payment_methods.append(payment_method)
+        return payment_methods
+
+
     @classmethod
     @rpc_call
     def get_by_id(cls, token, basket_id):
-        # "tJCodCILTxi3VsRJ2FILYfgbt00sj8-QP4jOxlNYFYD@"
-        # "beogb97"
         return cls.signature(method='getBasket', args=[token, basket_id])
 
     @classmethod
     @rpc_call
-    def checkout(cls, token, basket_id, checkout_props):
+    def checkout(cls, token, basket_id, method_preference, checkout_props):
         # checkoutBasket is deprecated
-        return cls.signature(method='checkoutBasket', args=[token, basket_id, checkout_props.data])
+        return cls.signature(method='checkoutBasket', data_converter=CheckoutResult, args=[token, basket_id, method_preference, checkout_props.data])
 
     @classmethod
     @rpc_call
     def create(cls, token, marker=None):
         return cls.signature(method='getNewBasket', args=[token, marker])
+
+
+class CheckoutResult(Store):
+
+    class ItemProperty(Store):
+        document_id = Field(target='com.bookpac.server.shop.fulfillment.document.newid')
+
+    basket = EmbeddedStoreField(target='checkedOutBasket', store_class=Basket)
+    code = Field(target='resultCode')
+    failed_item_index = IntField(target='failingPosition')
+    item_properties = EmbeddedStoreField(target='positionResultProperties', store_class=ItemProperty, is_array=True)
+    receipt_id = Field(target='receiptIdentifier')
+    transaction_id = Field(target='transactionID')
