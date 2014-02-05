@@ -193,6 +193,13 @@ class DocumentItem(Item, RpcMixin):
 class VoucherItem(Item, RpcMixin):
     voucher = EmbeddedStoreField(target='item', store_class=Voucher)
 
+    @classmethod
+    @rpc_call
+    def set_basket_quantity(cls, token, basket_id, voucher_code, quantity):
+        """This method should call the similar to `changeDocumentBasketPosition` reaktor method, but for Voucher.
+        """
+        raise NotImplemented
+
 
 def item_factory(data=None):
     """Item factory to get properly typed basket items."""
