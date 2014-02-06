@@ -1,5 +1,5 @@
 from . import Store, Field, LongIntField, EmbeddedStoreField
-from models import ReaktorMoney
+from models import Price
 from rpc import RpcMixin
 from money import Money
 
@@ -9,8 +9,8 @@ from money import Money
 class Voucher(Store, RpcMixin):
     code = LongIntField(target='code')
     text = Field(target='text')
-    _initial_amount = EmbeddedStoreField(target='initialAmount', store_class=ReaktorMoney)
-    _amount = EmbeddedStoreField(target='amount', store_class=ReaktorMoney)
+    _initial_amount = EmbeddedStoreField(target='initialAmount', store_class=Price)
+    _amount = EmbeddedStoreField(target='amount', store_class=Price)
     # not sure if it is needed
     # java_cls = Field(target='javaClass')
 

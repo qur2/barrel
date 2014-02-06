@@ -15,7 +15,7 @@ class Nature(Store, RpcMixin):
         return cls.signature(method='getNature', args=[name])
 
 
-class ReaktorMoney(Store):
+class Price(Store):
     """Helper class to use with the new reaktor price fields."""
     amount = FloatField(target='amount')
     currency = Field(target='currency')

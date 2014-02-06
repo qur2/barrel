@@ -1,6 +1,6 @@
 from . import Store, Field, BooleanField, DateField, IntField, EmbeddedStoreField
 from rpc import RpcMixin, rpc_call
-from models import ReaktorMoney
+from models import Price
 from document import Document
 from voucher import Voucher
 from django.utils.translation import ugettext as _
@@ -9,10 +9,10 @@ from money import Money
 
 class Item(Store):
     """Base item class, to be extended for specific purposes."""
-    _total = EmbeddedStoreField(target='positionTotal', store_class=ReaktorMoney)
-    _net_total = EmbeddedStoreField(target='positionNetTotal', store_class=ReaktorMoney)
-    _tax_total = EmbeddedStoreField(target='positionTaxTotal', store_class=ReaktorMoney)
-    _undiscounted_total = EmbeddedStoreField(target='undiscountedPositionTotal', store_class=ReaktorMoney)
+    _total = EmbeddedStoreField(target='positionTotal', store_class=Price)
+    _net_total = EmbeddedStoreField(target='positionNetTotal', store_class=Price)
+    _tax_total = EmbeddedStoreField(target='positionTaxTotal', store_class=Price)
+    _undiscounted_total = EmbeddedStoreField(target='undiscountedPositionTotal', store_class=Price)
 
     @property
     def total(self):
@@ -123,7 +123,7 @@ class Basket(Store, RpcMixin):
 
     class AppliedVoucherItem(Store):
         voucher = EmbeddedStoreField(target='voucher', store_class=Voucher)
-        discount = EmbeddedStoreField(target='discountAmount', store_class=ReaktorMoney)
+        discount = EmbeddedStoreField(target='discountAmount', store_class=Price)
 
     class PaymentForm(Store):
         form = Field(target='com.bookpac.server.shop.payment.paymentform')
@@ -135,10 +135,10 @@ class Basket(Store, RpcMixin):
     creation_date = DateField(target='creationTime')
     modification_date = DateField(target='modificationTime')
     country = Field(target='country')
-    _total = EmbeddedStoreField(target='total', store_class=ReaktorMoney)
-    _net_total = EmbeddedStoreField(target='netTotal', store_class=ReaktorMoney)
-    _tax_total = EmbeddedStoreField(target='taxTotal', store_class=ReaktorMoney)
-    _undiscounted_total = EmbeddedStoreField(target='undiscountedTotal', store_class=ReaktorMoney)
+    _total = EmbeddedStoreField(target='total', store_class=Price)
+    _net_total = EmbeddedStoreField(target='netTotal', store_class=Price)
+    _tax_total = EmbeddedStoreField(target='taxTotal', store_class=Price)
+    _undiscounted_total = EmbeddedStoreField(target='undiscountedTotal', store_class=Price)
     # payment_props = EmbeddedStoreField(target='paymentProperties', store_class=PaymentProperty)
     payment_forms = EmbeddedStoreField(target='paymentForms', store_class=PaymentForm)
     items = EmbeddedStoreField(target='positions', store_class=item_factory, is_array=True)
