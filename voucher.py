@@ -4,8 +4,8 @@ from rpc import RpcMixin
 from money import Money
 
 
-# FIXME: this class is used as embedded for `voucherApplications`
-# thus it might differ from the voucher that comes in the basket position
+# FIXME: this class is used as embedded for `voucherApplications` as well as for `Voucher` - a gift card
+# thus it might differ from the voucher that comes in the basket position (gift card)
 class Voucher(Store, RpcMixin):
     code = LongIntField(target='code')
     text = Field(target='text')

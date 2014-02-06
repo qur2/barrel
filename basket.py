@@ -42,6 +42,7 @@ class Item(Store):
 
 
 class DocumentItem(Item, RpcMixin):
+    """Abstraction for `BasketPosition` object, that stores `Document`, returned by reaktor."""
     interface = 'WSDocMgmt'
     document = EmbeddedStoreField(target='item', store_class=Document)
 
@@ -56,13 +57,16 @@ class DocumentItem(Item, RpcMixin):
         return cls.signature(method='changeDocumentBasketPosition', args=[token, basket_id, doc_id, quantity])
 
 
-class VoucherItem(Item, RpcMixin):
-    voucher = EmbeddedStoreField(target='item', store_class=Voucher)
+class GiftCardItem(Item, RpcMixin):
+    """Abstraction for `BasketPosition` object, that stores `Voucher`, returned by reaktor.
+    Named following the naming convention at txtr.
+    """
+    giftcard = EmbeddedStoreField(target='item', store_class=Voucher)
 
     @classmethod
     @rpc_call
     def set_basket_quantity(cls, token, basket_id, voucher_code, quantity):
-        """This method should call the similar to `changeDocumentBasketPosition` reaktor method, but for Voucher.
+        """This method should call the similar to `changeDocumentBasketPosition` reaktor method, handling Voucher.
         """
         raise NotImplemented
 
@@ -75,7 +79,7 @@ def item_factory(data=None):
     if item_type == 'DOCUMENT':
         return DocumentItem(data)
     elif item_type == 'VOUCHER':
-        return VoucherItem(data)
+        return GiftCardItem(data)
     else:
         raise ValueError('Basket item type not supported: %s' % item_type)
 
@@ -121,7 +125,7 @@ class Basket(Store, RpcMixin):
     #     merchant_account = Field(target='merchantAccount')
     #     merchant_ref = Field(target='merchantReference')
 
-    class AppliedVoucherItem(Store):
+    class VoucherItem(Store):
         voucher = EmbeddedStoreField(target='voucher', store_class=Voucher)
         discount = EmbeddedStoreField(target='discountAmount', store_class=Price)
 
@@ -143,7 +147,7 @@ class Basket(Store, RpcMixin):
     payment_forms = EmbeddedStoreField(target='paymentForms', store_class=PaymentForm)
     items = EmbeddedStoreField(target='positions', store_class=item_factory, is_array=True)
     authorized_payment_methods = Field(target='authorizedPaymentMethods')
-    applied_vouchers = EmbeddedStoreField(target='voucherApplications', store_class=AppliedVoucherItem, is_array=True)
+    vouchers = EmbeddedStoreField(target='voucherApplications', store_class=VoucherItem, is_array=True)
 
     @property
     def total(self):
@@ -171,12 +175,12 @@ class Basket(Store, RpcMixin):
                 yield item
 
     @property
-    def voucher_items(self):
-        """A property that allows to iterate over the voucher items.
+    def giftcard_items(self):
+        """A property that allows to iterate over the gift card items.
         Returns generator.
         """
         for item in self.items:
-            if isinstance(item, VoucherItem):
+            if isinstance(item, GiftCardItem):
                 yield item
 
     @property
@@ -188,12 +192,12 @@ class Basket(Store, RpcMixin):
             yield item.document
 
     @property
-    def vouchers(self):
-        """A property that allows to iterate over the vouchers.
+    def giftcards(self):
+        """A property that allows to iterate over the gift cards.
         Returns generator.
         """
-        for item in self.voucher_items:
-            yield item.voucher
+        for item in self.giftcard_items:
+            yield item.giftcard
 
     def is_authorized_for(self, payment_method):
         """Check whether the basket is authorized for the given payment_method.
