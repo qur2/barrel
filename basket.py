@@ -227,7 +227,7 @@ class Basket(Store, RpcMixin):
     @rpc_call
     def checkout(cls, token, basket_id, method_preference, checkout_props):
         # checkoutBasket is deprecated
-        return cls.signature(method='checkoutBasket', data_converter=CheckoutResult, args=[token, basket_id, method_preference, checkout_props.data])
+        return cls.signature(method='checkoutBasket', data_converter=CheckoutResult, args=[token, basket_id, method_preference, checkout_props])
 
     @classmethod
     @rpc_call
