@@ -11,8 +11,29 @@ Field aliasing enables to virtually:
 * change key names
 * modify the apparent structure of the dict
 """
+from .signals import class_ready
 from iso8601 import iso8601
+import inspect
 # from money import Money
+
+
+# storage for fields that need to be initialized later
+pending_fields = {}
+
+def resolve_pending_fields(sender, **kwargs):
+    """Signal handler that sets `store_class` and `store` field attributes."""
+    key = '.'.join([sender.__module__, sender.__name__])
+    for field in pending_fields.pop(key, []):
+        field.store_class = sender
+        # not sure if the following needed
+        # since `__getattribute__` uses the `store_class` attribute of a field
+        # that we've already set the line above
+        if field.is_array:
+            field.store = CollectionStore(sender)
+        else:
+            field.store = sender()
+
+class_ready.connect(resolve_pending_fields)
 
 
 class StoreMeta(type):
@@ -30,7 +51,10 @@ class StoreMeta(type):
             if hasattr(parent, 'fields'):
                 fields.update(parent.fields)
         attrs['fields'] = fields
-        return super(StoreMeta, cls).__new__(cls, name, bases, attrs)
+        cls = super(StoreMeta, cls).__new__(cls, name, bases, attrs)
+        # send `class_ready` signal
+        class_ready.send(sender=cls)
+        return cls
 
 
 def simple_get(key, dictionary):
@@ -90,12 +114,31 @@ class EmbeddedStoreField(Field):
     datastore, i.e. adding a level that doesn't exist in the datastore.
     """
     def __init__(self, target, store_class, is_array=False):
-        self.store_class = store_class
+        # it is possible to give the reference to the store class
+        # as a string - python path, or as a class
+        if isinstance(store_class, basestring):
+            # it is dotted path, use it as a key
+            if len(store_class.split('.')) > 1:
+                key = store_class
+            # it is the class name from the same module
+            # get the module path to compose the key
+            else:
+                frm = inspect.stack()[1]
+                module = inspect.getmodule(frm[0])
+                key = '.'.join([module.__name__, store_class])
+            # set the item in `pending_fields` dict
+            pending_fields.setdefault(key, []).append(self)
+            # mock callable object here
+            self.store_class = object
+        elif callable(store_class):
+            self.store_class = store_class
+        else:
+            raise TypeError("`store_class` should be either callable or string.")
         self.is_array = is_array
         if is_array:
-            self.store = CollectionStore(store_class)
+            self.store = CollectionStore(self.store_class)
         else:
-            self.store = store_class()
+            self.store = self.store_class()
         super(EmbeddedStoreField, self).__init__(target)
 
 
