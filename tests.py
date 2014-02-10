@@ -51,6 +51,13 @@ DATA = {
   "someFloatValue": '0.605714'
 }
 
+# classes to test the recursive references
+class LazyFoo(Store):
+    id = Field(target='id')
+    bar = EmbeddedStoreField(target='bar', store_class='LazyBar')
+class LazyBar(Store):
+    foo = EmbeddedStoreField(target='foo', store_class='LazyFoo')
+
 
 class BarrelTestCase(TestCase):
     """The test case for Barrel."""
@@ -169,19 +176,10 @@ class BarrelTestCase(TestCase):
         self.assertEqual(len(u._embedded_stores_cache), 1)
 
     def testEmbeddedStoreFieldLazyReference(self):
-        """`EmbeddedStoreField` supports lazy references to other stores"""
-        try:
-            class Foo(Store):
-                id = Field(target='id')
-                bar = EmbeddedStoreField(target='bar', store_class='Bar')
-            class Bar(Store):
-                foo = EmbeddedStoreField(target='foo', store_class=Foo)
-        except Exception as e:
-            self.fail("%s occurred on store classes definition: %s" % (e.__class__.__name__, e.message))
-        else:
-            data = {'id': 'foo', 'bar': {'foo': {'id': 'some'}}}
-            f = Foo(data)
-            self.assertEqual(f.bar.foo.id, 'some')
+        """`EmbeddedStoreField` supports recursive references to other stores"""
+        data = {'id': 'foo', 'bar': {'foo': {'id': 'some'}}}
+        f = LazyFoo(data)
+        self.assertEqual(f.bar.foo.id, 'some')
 
     def testCollectionStore(self):
         """`CollectionStore` items have the given store class"""

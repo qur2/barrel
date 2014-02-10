@@ -14,6 +14,7 @@ Field aliasing enables to virtually:
 from .signals import class_ready
 from iso8601 import iso8601
 import inspect
+from django.utils.importlib import import_module
 # from money import Money
 
 
@@ -117,19 +118,31 @@ class EmbeddedStoreField(Field):
         # it is possible to give the reference to the store class
         # as a string - python path, or as a class
         if isinstance(store_class, basestring):
-            # it is dotted path, use it as a key
-            if len(store_class.split('.')) > 1:
+            path = store_class.split('.')
+            # it is dotted path
+            if len(path) > 1:
+                # key that we might use to resolve the class, once it's ready
                 key = store_class
-            # it is the class name from the same module
-            # get the module path to compose the key
+                # module that we will try to import
+                module_path = '.'.join(path[:-1])
+                # class that we will try to import
+                store_class = path[-1]
+            # it is the class name from the module of the `EmbeddedStoreField` caller
             else:
+                # get the module of the caller
                 frm = inspect.stack()[1]
-                module = inspect.getmodule(frm[0])
-                key = '.'.join([module.__name__, store_class])
-            # set the item in `pending_fields` dict
-            pending_fields.setdefault(key, []).append(self)
-            # mock callable object here
-            self.store_class = object
+                module_path = inspect.getmodule(frm[0]).__name__
+                # key that we might use to resolve the class, once it's ready
+                key = '.'.join([module_path, store_class])
+            # try to import the `store_class` first - it might be ready
+            module = import_module(module_path)
+            self.store_class = getattr(module, store_class, None)
+            # if the `store_class` is not ready yet, set the field to be resolved later
+            if not self.store_class:
+                # set the item in `pending_fields` dict
+                pending_fields.setdefault(key, []).append(self)
+                # mock callable object here
+                self.store_class = object
         elif callable(store_class):
             self.store_class = store_class
         else:
