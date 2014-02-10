@@ -43,7 +43,7 @@ class Item(Store):
 
 
 class DocumentItem(Item, RpcMixin):
-    """Abstraction for `BasketPosition` object, that stores `Document`, returned by reaktor."""
+    """Abstraction for `BasketPosition` reaktor object, that stores `Document`."""
     interface = 'WSDocMgmt'
     document = EmbeddedStoreField(target='item', store_class=Document)
 
@@ -59,7 +59,7 @@ class DocumentItem(Item, RpcMixin):
 
 
 class GiftCardItem(Item, RpcMixin):
-    """Abstraction for `BasketPosition` object, that stores `Voucher`, returned by reaktor.
+    """Abstraction for `BasketPosition` reaktor object, that stores `Voucher`.
     Named following the naming convention at txtr.
     """
     giftcard = EmbeddedStoreField(target='item', store_class=Voucher)
@@ -70,6 +70,35 @@ class GiftCardItem(Item, RpcMixin):
         """This method should call the similar to `changeDocumentBasketPosition` reaktor method, handling Voucher.
         """
         raise NotImplemented
+
+
+class VoucherItem(Store, RpcMixin):
+    """Abstraction for `VoucherApplication` reaktor object, that stores `Voucher`."""
+    interface = 'WSVoucherMgmt'
+
+    class Result(Store):
+        """Helper class to abstract `BasketModificationResult` reaktor object."""
+        code = Field(target='resultCode')
+        basket = EmbeddedStoreField(target='basket', store_class='Basket')
+
+    voucher = EmbeddedStoreField(target='voucher', store_class=Voucher)
+    discount = EmbeddedStoreField(target='discountAmount', store_class=Price)
+
+    @classmethod
+    @rpc_call
+    def apply(cls, token, code, basket_id):
+        """Reaktor `WSVoucherMgmt.addVoucherToBasket` call.
+        Returns `Result` object.
+        """
+        return cls.signature(method='addVoucherToBasket', args=[token, code, basket_id], data_converter=cls.Result)
+
+    @classmethod
+    @rpc_call
+    def remove(cls, token, code, basket_id):
+        """Reaktor `WSVoucherMgmt.removeVoucherFromBasket` call.
+        Returns `Result` object.
+        """
+        return cls.signature(method='removeVoucherFromBasket', args=[token, code, basket_id], data_converter=cls.Result)
 
 
 def item_factory(data=None):
@@ -125,10 +154,6 @@ class Basket(Store, RpcMixin):
     # class PaymentProperty(Store):
     #     merchant_account = Field(target='merchantAccount')
     #     merchant_ref = Field(target='merchantReference')
-
-    class VoucherItem(Store):
-        voucher = EmbeddedStoreField(target='voucher', store_class=Voucher)
-        discount = EmbeddedStoreField(target='discountAmount', store_class=Price)
 
     class PaymentForm(Store):
         form = Field(target='com.bookpac.server.shop.payment.paymentform')
@@ -221,7 +246,6 @@ class Basket(Store, RpcMixin):
                 else:
                     payment_methods.append(payment_method)
         return payment_methods
-
 
     @classmethod
     @rpc_call
