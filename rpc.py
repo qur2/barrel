@@ -1,5 +1,6 @@
 from collections import namedtuple
 from functools import wraps, partial
+from warnings import warn
 from libs.own.holon import reaktor
 
 
@@ -44,3 +45,36 @@ def do_rpc_call(sig):
     interface = getattr(reaktor(), sig.interface)
     converter = partial(check_data, sig.data_converter)
     return getattr(interface, sig.method)(*sig.args, data_converter=converter)
+
+
+def deprecated(deprecated_call):
+    """Logs a deprecation warning for the call.
+
+    :param deprecated_call: reaktor call, that is deprecated
+    :type deprecated_call: str or unicode
+    """
+    def outer(func):
+        @wraps(func)
+        def inner(cls, *args, **kwargs):
+            warn(Warning("`%s` call is deprecated." % deprecated_call))
+            return func(cls, *args, **kwargs)
+        return inner
+    return outer
+
+
+#TODO (Iurii Kudriavtsev): think of combining these two decorators
+def deprecated_with(deprecated_call, new_call):
+    """Logs a deprecation warning for the call.
+
+    :param deprecated_call: reaktor call, that is deprecated
+    :type deprecated_call: str or unicode
+    :param new_call: reaktor_call that should be used instead of the deprecated call
+    :type deprecated_call: str or unicode
+    """
+    def outer(func):
+        @wraps(func)
+        def inner(cls, *args, **kwargs):
+            warn(Warning("`%s` call is deprecated. Use `%s` call instead." % (deprecated_call, new_call)))
+            return func(cls, *args, **kwargs)
+        return inner
+    return outer
