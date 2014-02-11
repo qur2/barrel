@@ -33,43 +33,27 @@ def do_rpc_call(sig):
 class RpcMixin(object):
     @classmethod
     @rpc_call
-    def signature(cls, interface=None, method=None, data_converter=None, args=None):
+    def signature(cls, interface=None, method=None, data_converter=None, args=None, deprecated=False):
         """Returns a named tuple suitable for easy RPC call while providing
         some defaults: the RPC interface and the data converter are read
         from the class.
+
+        :param interface: rpc interface to use
+        :type interface: str or unicode
+        :param method: rpc method to call
+        :type method: str or unicode
+        :param data_converter: python object to abstract the rpc object
+        :type data_converter: any callable, e.g. subclass of `apps.barrel.Store`
+        :param args: arguments to pass for rpc method
+        :type args: list
+        :param deprecated: flag to warn about deprecated call
+        :type deprecated: bool or str or unicode
         """
+        if deprecated:
+            if isinstance(deprecated, basestring):
+                message = "`%s` call is deprecated. Use `%s` call instead." % (method, deprecated)
+            else:
+                message = "`%s` call is deprecated." % method
+            warn(Warning(message))
         return RpcSignature(interface=interface or cls.interface, method=method,
                             data_converter=data_converter or cls, args=args)
-
-
-def deprecated(deprecated_call):
-    """Logs a deprecation warning for the call.
-
-    :param deprecated_call: reaktor call, that is deprecated
-    :type deprecated_call: str or unicode
-    """
-    def outer(func):
-        @wraps(func)
-        def inner(cls, *args, **kwargs):
-            warn(Warning("`%s` call is deprecated." % deprecated_call))
-            return func(cls, *args, **kwargs)
-        return inner
-    return outer
-
-
-#TODO (Iurii Kudriavtsev): think of combining these two decorators
-def deprecated_with(deprecated_call, new_call):
-    """Logs a deprecation warning for the call.
-
-    :param deprecated_call: reaktor call, that is deprecated
-    :type deprecated_call: str or unicode
-    :param new_call: reaktor_call that should be used instead of the deprecated call
-    :type deprecated_call: str or unicode
-    """
-    def outer(func):
-        @wraps(func)
-        def inner(cls, *args, **kwargs):
-            warn(Warning("`%s` call is deprecated. Use `%s` call instead." % (deprecated_call, new_call)))
-            return func(cls, *args, **kwargs)
-        return inner
-    return outer
