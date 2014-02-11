@@ -31,12 +31,6 @@ def rpc_call(func):
     @wraps(func)
     def inner(cls, *args, **kwargs):
         sig = func(cls, *args, **kwargs)
-        void_sigs = ()
-        if not isinstance(sig, RpcSignature):
-            void_sigs = sig[:-1]
-            sig = sig[-1]
-        for s in void_sigs:
-            do_rpc_call(s)
         return do_rpc_call(sig)
     return inner
 
