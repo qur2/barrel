@@ -214,6 +214,9 @@ class Store(object):
         for name in self.fields:
             yield name, getattr(self, name)
 
+    def __nonzero__(self):
+        return bool(self.data)
+
 
 class CollectionStore(Store):
     """Handles collection of stores and provide array-like interface to access them.
