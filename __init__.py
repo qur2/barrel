@@ -89,15 +89,22 @@ def deep_set(deep_key, dictionary, value, sep=':'):
 class Field(object):
     """Base field class for dict datastore handling."""
 
-    def __init__(self, target, target_sep=':'):
+    def __init__(self, target, target_sep=':', default=None):
         self.target = target
         self.target_sep = target_sep
+        self.default = default
 
     def get(self, dct):
-        if self.target and self.target_sep in self.target:
-            return deep_get(self.target, dct, self.target_sep)
-        else:
-            return simple_get(self.target, dct)
+        try:
+            if self.target and self.target_sep in self.target:
+                return deep_get(self.target, dct, self.target_sep)
+            else:
+                return simple_get(self.target, dct)
+        except KeyError, err:
+            if self.default is not None:
+                return self.default
+            else:
+                raise err
 
     def set(self, dct, value):
         if self.target and self.target_sep in self.target:

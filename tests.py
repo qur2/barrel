@@ -104,6 +104,14 @@ class BarrelTestCase(TestCase):
         u = User(self.raw_data)
         self.assertEqual(u.id, self.raw_data["userID"])
 
+    def testStoreFieldWithDefaultValue(self):
+        """`Store` handles `Field`-type attributes"""
+        default = ''
+        class User(Store):
+            f = Field(target='__nowhere', default=default)
+        u = User(self.raw_data)
+        self.assertEqual(u.f, default)
+
     def testStoreFieldSet(self):
         """`Store` sets `Field`-type attributes"""
         local_data = self.raw_data.copy()
