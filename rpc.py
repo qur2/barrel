@@ -7,10 +7,13 @@ from libs.own.holon import reaktor
 RpcSignature = namedtuple('RpcSignature', 'interface, method, data_converter, args')
 
 
-def check_data(data_converter, dct):
-    """Store class method returns `None` in case the reaktor call returns `void`."""
-    if dct:
-        return data_converter(dct)
+def check_data(data_converter, data):
+    """Store class method returns `None` in case the reaktor call returns `void`.
+    For empty result (<> void), the data converter is still run because the backend
+    omits empty and null attributes for bandwidth efficiency.
+    """
+    if data is not None:
+        return data_converter(data)
 
 
 def rpc_call(func):
