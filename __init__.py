@@ -233,6 +233,11 @@ class CollectionStore(Store):
         if data is None:
             data = []
         self.store_class = store_class
+        # In reaktor 1.41.80, document categories are returned as hashes rather
+        # than lists, so barrel has to make it compatible. Should removed when
+        # reaktor is fixed (to check in 1.50.16).
+        if isinstance(data, dict):
+            data = data.values()
         return super(CollectionStore, self).__init__(data)
 
     def __getitem__(self, index):
