@@ -11,7 +11,11 @@ def check_data(data_converter, data):
     """Store class method returns `None` in case the reaktor call returns `void`.
     For empty result (<> void), the data converter is still run because the backend
     omits empty and null attributes for bandwidth efficiency.
+    In case of data being an array, a collection of items is assumed and each item
+    is converted using the provided `data_converter`.
     """
+    if isinstance(data, list):
+        return [data_converter(d) for d in data]
     if data is not None:
         return data_converter(data)
 
