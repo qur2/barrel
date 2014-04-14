@@ -289,7 +289,9 @@ class LongIntField(Field):
     """Handles long integer values - returns long"""
     def get(self, dct):
         value = super(LongIntField, self).get(dct)
-        return long(value)
+        # Reaktor inconsistently returns ISBN containing dashes or no separator.
+        # Make sure skins doesn't get in trouble because of that.
+        return long(''.join(value.split('-')))
 
 
 # This field is not used at the moment because of the reaktor price handling inconsistency.
