@@ -294,6 +294,21 @@ class LongIntField(Field):
         return long(''.join(value.split('-')))
 
 
+class SplitField(Field):
+    """Handles splittable strings - returns list"""
+    def __init__(self, target, target_sep=':', default=None, value_sep=','):
+        super(SplitField, self).__init__(target, target_sep=target_sep, default=default)
+        self.value_sep = value_sep
+
+    def get(self, dct):
+        value = super(SplitField, self).get(dct)
+        # value might be the default, in which would probably already be a list
+        if isinstance(value, list):
+            return value
+        else:
+            return value.split(self.value_sep)
+
+
 # This field is not used at the moment because of the reaktor price handling inconsistency.
 # Kept here for the better __future__.
 # class MoneyField(Field):
