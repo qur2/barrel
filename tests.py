@@ -278,6 +278,20 @@ class BarrelTestCase(TestCase):
         u = User(self.raw_data)
         self.assertTrue(isinstance(u.id, long))
 
+    def testSplitField(self):
+        """`SplitField` returns list"""
+        class User(Store):
+            nature_bits = SplitField(target='userNature', value_sep='.')
+        u = User(self.raw_data)
+        self.assertTrue(isinstance(u.nature_bits, list))
+
+    def testSplitFieldDefault(self):
+        """`SplitField` returns list"""
+        class User(Store):
+            empty_list = SplitField(target='thereisnotrack11', default=[])
+        u = User(self.raw_data)
+        self.assertTrue(isinstance(u.empty_list, list))
+
     @skip('`MoneyField` is not supported yet')
     def testMoneyField(self):
         """`MoneyField` returns `Money` object"""
