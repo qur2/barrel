@@ -2,7 +2,7 @@ from collections import namedtuple
 from functools import wraps, partial
 from warnings import warn
 from libs.own.holon import reaktor
-from apps.global_request.middleware import GlobalRequest
+
 
 RpcSignature = namedtuple('RpcSignature', 'interface, method, data_converter, args')
 
@@ -34,7 +34,7 @@ def rpc_call(func):
 def do_rpc_call(sig):
     interface = getattr(reaktor(), sig.interface)
     converter = partial(check_data, sig.data_converter)
-    return getattr(interface, sig.method)(*sig.args, data_converter=converter, request=GlobalRequest.get_request())
+    return getattr(interface, sig.method)(*sig.args, data_converter=converter)
 
 
 class RpcMixin(object):
