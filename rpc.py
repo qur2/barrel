@@ -34,11 +34,7 @@ def rpc_call(func):
 def do_rpc_call(sig):
     interface = getattr(reaktor(), sig.interface)
     converter = partial(check_data, sig.data_converter)
-    request=GlobalRequest.get_request()
-    headers = {}
-    headers['Device-Info'] = request.META.get("HTTP_USER_AGENT", "")
-    headers['X-Forwarded-For'] = request.META.get("REMOTE_ADDR", "")
-    return getattr(interface, sig.method)(*sig.args, data_converter=converter, headers=headers)
+    return getattr(interface, sig.method)(*sig.args, data_converter=converter, request=GlobalRequest.get_request())
 
 
 class RpcMixin(object):
