@@ -9,21 +9,22 @@ logger = logging.getLogger(__name__)
 empty = object()
 
 
-def memoize(duration=10, engine=default_cache_engine, cache_key=None):
+def cache(duration=10, engine=default_cache_engine, keygen=None, need_cache=lambda x: True):
     def outer(fn):
-        fn.cache_key = cache_key
-
         @wraps(fn)
         def inner(cls, *args, **kwargs):
             # beware that dictionaries are not ordered, and we need an injective function to generate keys
             for key in sorted(kwargs):
                 args.append(kwargs[key])
-            cache_key = (fn.cache_key or call_key)(cls, fn, args)
+            cache_key = (keygen or call_key)(cls, fn, args)
             cache_val = engine.get(cache_key, empty)
             if cache_val == empty:
-                logging.info("cache miss: %s" % cache_key)
                 cache_val = fn(cls, *args, **kwargs)
-                engine.set(cache_key, cache_val)
+                if need_cache(cache_val):
+                    logging.info("cache miss: %s" % cache_key)
+                    engine.set(cache_key, cache_val)
+                else:
+                    logging.info("no cache: %s" % cache_key)
             else:
                 logging.info("cache hit: %s" % cache_key)
             return cache_val
