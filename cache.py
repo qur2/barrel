@@ -13,6 +13,7 @@ def cache(duration=10, engine=default_cache_engine, keygen=None, need_cache=lamb
     def outer(fn):
         @wraps(fn)
         def inner(cls, *args, **kwargs):
+            args = list(args)  # needs casting to list in case there is a need to append
             # beware that dictionaries are not ordered, and we need an injective function to generate keys
             for key in sorted(kwargs):
                 args.append(kwargs[key])
@@ -41,7 +42,7 @@ def memcached_safe(string):
 
 def call_key(cls, fn, args, sep=','):
     """Generate a cache key base on a method signature."""
-    return '%s.%s(%s)' % (cls.__name__, fn.__name__, memcached_safe(sep.join(args)))
+    return '%s.%s(%s)' % (cls.__name__, fn.__name__, memcached_safe(sep.join((map(unicode, args)))))
 
 
 def reduced_call_key(cls, fn, args, i=0, j=None):
