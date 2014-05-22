@@ -1,7 +1,7 @@
 from collections import namedtuple
 from functools import wraps, partial
 from warnings import warn
-from libs.own.holon import reaktor
+from libs import reaktor
 
 
 RpcSignature = namedtuple('RpcSignature', 'interface, method, data_converter, args')
