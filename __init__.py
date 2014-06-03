@@ -21,6 +21,7 @@ from django.utils.importlib import import_module
 # storage for fields that need to be initialized later
 pending_fields = {}
 
+
 def resolve_pending_fields(sender, **kwargs):
     """Signal handler that sets `store_class` and `store` field attributes."""
     key = '.'.join([sender.__module__, sender.__name__])
@@ -74,6 +75,7 @@ def deep_get(deep_key, dictionary, sep=':'):
     while keys:
         dictionary = dictionary[keys.pop(0)]
     return dictionary
+
 
 def deep_set(deep_key, dictionary, value, sep=':'):
     """Sets through multiple dictionary levels, splitting
@@ -195,8 +197,8 @@ class Store(object):
             try:
                 return attr.get(self.data)
             except (KeyError,):
-                raise AttributeError("'%s' store lookup failed for '%s'" %
-                    (self.__class__.__name__, attr.target))
+                raise AttributeError("'%s' store lookup failed for '%s'" % (
+                    self.__class__.__name__, attr.target))
         else:
             return attr
 
@@ -205,15 +207,15 @@ class Store(object):
             attr = self.fields[name]
             # embedded stores are not directly settable
             if isinstance(attr, (EmbeddedStoreField,)):
-                raise TypeError("'%s' store does not support %s assignment" %
-                        (self.__class__.__name__, EmbeddedStoreField.__name__))
+                raise TypeError("'%s' store does not support %s assignment" % (
+                    self.__class__.__name__, EmbeddedStoreField.__name__))
             # if it's a field, set the value in the model data
             elif isinstance(attr, (Field,)):
                 try:
                     attr.set(self.data, value)
                 except (KeyError,):
-                    raise AttributeError("'%s' store lookup failed for '%s'" %
-                        (self.__class__.__name__, attr.target))
+                    raise AttributeError("'%s' store lookup failed for '%s'" % (
+                        self.__class__.__name__, attr.target))
         else:
             super(Store, self).__setattr__(name, value)
 
@@ -291,7 +293,7 @@ class LongIntField(Field):
         value = super(LongIntField, self).get(dct)
         # Reaktor inconsistently returns ISBN containing dashes or no separator.
         # Make sure skins doesn't get in trouble because of that.
-        return long(''.join(value.split('-')))
+        return long(''.join(str(value).split('-')))
 
 
 class SplitField(Field):
