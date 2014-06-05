@@ -2,7 +2,7 @@ from . import *
 from copy import deepcopy
 from datetime import datetime
 from decimal import Decimal
-from django.test import TestCase
+from unittest import TestCase
 from unittest import skip
 
 
@@ -55,6 +55,8 @@ DATA = {
 class LazyFoo(Store):
     id = Field(target='id')
     bar = EmbeddedStoreField(target='bar', store_class='LazyBar')
+
+
 class LazyBar(Store):
     foo = EmbeddedStoreField(target='foo', store_class='LazyFoo')
 
