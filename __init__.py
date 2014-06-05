@@ -12,9 +12,9 @@ Field aliasing enables to virtually:
 * modify the apparent structure of the dict
 """
 from .signals import class_ready
+from .utils import import_module
 from iso8601 import iso8601
 import inspect
-from django.utils.importlib import import_module
 # from money import Money
 
 
