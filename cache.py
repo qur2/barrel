@@ -77,7 +77,7 @@ def memcached_safe(string):
     """Strip space and make sure there is no utf8 characters left, required
     to keep memcache happy.
     """
-    return string.replace(' ', '_').decode('utf8').encode('ascii', 'replace')
+    return string.replace(' ', '_')
 
 
 def call_key(cls, fn, args, sep=','):
