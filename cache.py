@@ -1,6 +1,7 @@
 from functools import partial, wraps
 from itertools import islice
 import logging
+from . import config
 
 
 logger = logging.getLogger(__name__)
@@ -8,27 +9,7 @@ logger = logging.getLogger(__name__)
 empty = object()
 
 
-class Engines(object):
-    """Helper class to hold engines the cache decorator shoud know about.
-    To register the engines, simply call `Engines.configure()` with some `kwargs`.
-    """
-    def configure(self, **kwargs):
-        """`kwargs` is a dictionary of `engine_name:engine`.
-        """
-        for key, engine in kwargs.iteritems():
-            setattr(self, key, engine)
-
-    def __getitem__(self, key):
-        """Implements dictionary access for easy getting.
-        Note that it never raises, and leaves the decision to do so to the caller.
-        """
-        return getattr(self, key, None)
-
-
-engines = Engines()
-
-
-def cache(duration=10, keygen=None, need_cache=lambda x: True, engine_name='barrel'):
+def cache(duration=10, keygen=None, need_cache=lambda x: True, engine_name=config.DEFAULT_CACHE_ENGINE_NAME):
     """Decorator used to cache the return value of a function.
     If the engine is not available, a warning is issued but everything will run smoothly,
     wihtout any cache.
@@ -39,13 +20,11 @@ def cache(duration=10, keygen=None, need_cache=lambda x: True, engine_name='barr
     :type keygen: Callable
     :param need_cache: Callable that checks if the value needs to be cached or not.
     :type need_cache: Callable
-    :param engine_name: The cache engine name to work with. It will be fetched from the `barrel.cache.engines`.
-    :type engine_name: String, the engine itself should ducktype `django.core.cache.BaseCache`
-    :returns: Decorated function, which tries to hit the cache before running the inner function.
-                If the engine is not properly configured, then the inner function is not decorated.
+    :param engine_name: The cache engine name to work with.
+    :type engine_name: str or unicode
     """
     def outer(fn):
-        engine = engines[engine_name]
+        engine = config.CACHE_ENGINES.get(engine_name)
         if not engine:
             logging.warning("cache not properly configured for %s" % fn)
             return fn
@@ -73,20 +52,18 @@ def cache(duration=10, keygen=None, need_cache=lambda x: True, engine_name='barr
     return outer
 
 
-def clear_cache(keygen, engine_name='barrel'):
+def clear_cache(keygen, engine_name=config.DEFAULT_CACHE_ENGINE_NAME):
     """Decorator used to clear some cache keys.
     If the engine is not available, a warning is issued but everything will run smoothly,
     wihtout any cache clearing ability.
 
     :param keygen: The key generator function. It expects a bunch pf keys at once.
     :type keygen: Callable that returns a list or a tuple
-    :param engine_name: The caching engine to work with. Defaults to django's default engine.
-    :type engine_name: String, the engine itself should ducktype `django.core.cache.BaseCache`
-    :returns: Decorated function, which tries to clear some cache entries before running the inner function.
-                If the engine is not properly configured, then the inner function is not decorated.
+    :param engine_name: The caching engine to work with.
+    :type engine_name: str or unicode
     """
     def outer(fn):
-        engine = engines[engine_name]
+        engine = config.CACHE_ENGINES.get(engine_name)
         if not engine:
             logging.warning("cache not properly configured for %s" % fn)
             return fn

@@ -15,7 +15,57 @@ from .signals import class_ready
 from .utils import import_module
 from iso8601 import iso8601
 import inspect
+from holon import Reaktor
 # from money import Money
+
+
+__all__ = [
+    'config', 'Field', 'EmbeddedStoreField', 'Store', 'CollectionStore',
+    'BooleanField', 'DateField', 'IntField', 'FloatField', 'LongIntField', 'SplitField',
+]
+
+
+_reaktor_config = {
+    'host': 'skins-staging-reaktor',
+    'port': 8080,
+    'path': '/api/1.50.31/rpc',
+    'ssl': False,
+    'user_agent': 'hreaktor',
+    'connect_timeout': 20,
+    'run_timeout': 40,
+    'do_retry': False,
+    'retry_sleep': 1.,
+    'communication_error_class': 'reaktor.ReaktorIOError',
+    'http_service': 'services.httplib.HttpLibHttpService',
+}
+
+
+# default app configuration
+_default_config = {
+    'CACHE_ENGINES': {},
+    'DEFAULT_CACHE_ENGINE_NAME': 'barrel',
+    # this setting should be overridden
+    'REAKTOR': Reaktor(**_reaktor_config),
+}
+
+class Config(object):
+    """Small helper class that stores app configuration."""
+    def __init__(self, config=None):
+        self.config = config or {}
+
+    def configure(self, **kwargs):
+        self.config.update(kwargs)
+
+    def __getattribute__(self, name):
+        get_attr = super(Config, self).__getattribute__
+        config = get_attr('config')
+        config_value = config.get(name, _default_config.get(name))
+        if config_value is not None:
+            return config_value
+        return get_attr(name)
+
+# app configuration
+config = Config()
 
 
 # storage for fields that need to be initialized later

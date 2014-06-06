@@ -1,7 +1,7 @@
 from collections import namedtuple
 from functools import wraps, partial
 from warnings import warn
-from libs.reaktor import reaktor
+from . import config
 
 
 RpcSignature = namedtuple('RpcSignature', 'interface, method, data_converter, args')
@@ -32,7 +32,7 @@ def rpc_call(func):
 
 
 def do_rpc_call(sig):
-    interface = getattr(reaktor(), sig.interface)
+    interface = getattr(config.REAKTOR(), sig.interface)
     converter = partial(check_data, sig.data_converter)
     return getattr(interface, sig.method)(*sig.args, data_converter=converter)
 
