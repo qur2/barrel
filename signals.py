@@ -1,4 +1,4 @@
-from django.dispatch import Signal
+from blinker import signal
 
 
-class_ready = Signal(providing_args=["class"])
+class_ready = signal('class-ready')

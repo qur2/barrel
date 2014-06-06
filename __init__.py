@@ -72,7 +72,7 @@ config = Config()
 pending_fields = {}
 
 
-def resolve_pending_fields(sender, **kwargs):
+def resolve_pending_fields(sender):
     """Signal handler that sets `store_class` and `store` field attributes."""
     key = '.'.join([sender.__module__, sender.__name__])
     for field in pending_fields.pop(key, []):
@@ -105,7 +105,7 @@ class StoreMeta(type):
         attrs['fields'] = fields
         cls = super(StoreMeta, cls).__new__(cls, name, bases, attrs)
         # send `class_ready` signal
-        class_ready.send(sender=cls)
+        class_ready.send(cls)
         return cls
 
 
