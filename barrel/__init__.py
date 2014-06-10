@@ -33,8 +33,6 @@ _reaktor_config = {
     'user_agent': 'hreaktor',
     'connect_timeout': 20,
     'run_timeout': 40,
-    'do_retry': False,
-    'retry_sleep': 1.,
     'communication_error_class': 'reaktor.ReaktorIOError',
     'http_service': 'services.httplib.HttpLibHttpService',
 }
