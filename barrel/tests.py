@@ -1,4 +1,5 @@
 from . import *
+from . import simple_get, simple_set, deep_get, deep_set  # those are not publicly exposed
 from copy import deepcopy
 from datetime import datetime
 from decimal import Decimal
