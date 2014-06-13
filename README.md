@@ -38,6 +38,12 @@ At the moment it is useless, because of the Reaktor inconsistency.
 
 Please, refer to tests.
 
+## Running tests
+
+```
+python -m unittest discover barrel.tests
+```
+
 ## License
 
 BSD, see `LICENSE` for more details.
