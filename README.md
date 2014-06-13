@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/txtr/barrel.svg?branch=master)](https://travis-ci.org/txtr/barrel)
+
 # Barrel
 
 This library enables model-like encapsulation of big dict structure (like JSON data).
