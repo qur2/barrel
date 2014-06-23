@@ -339,9 +339,11 @@ class LongIntField(Field):
     """Handles long integer values - returns long"""
     def get(self, dct):
         value = super(LongIntField, self).get(dct)
-        # Reaktor inconsistently returns ISBN containing dashes or no separator.
-        # Make sure skins doesn't get in trouble because of that.
-        return long(''.join(str(value).split('-')))
+        if isinstance(value, basestring):
+            # Reaktor inconsistently returns ISBN that may contain dashes or control character.
+            # Make sure barrel doesn't get in trouble because of that.
+            return long(''.join([c for c in value if c.isdigit()]))
+        return long(value)
 
 
 class SplitField(Field):
