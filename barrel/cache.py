@@ -91,7 +91,7 @@ def memcached_safe(string):
 
 
 def call_key(cls, fn, args, sep=','):
-    """Generate a cache key base on function call arguments."""
+    """Generate a cache key based on function call arguments."""
     return '%s.%s(%s)' % (cls.__name__, fn.__name__, memcached_safe(sep.join((map(unicode, args)))))
 
 
