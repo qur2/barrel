@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='barrel',
-    version='0.0.1-dev',
+    version='0.0.1',
     description='python interface to reaktor API',
     long_description=__doc__,
     license='BSD',
@@ -13,8 +13,8 @@ setup(
     url='https://github.com/txtr/barrel/',
     packages=find_packages(),
     platforms='any',
-    install_requires=['blinker', 'iso8601', 'holon==0.0.5', ],
+    install_requires=['blinker', 'iso8601', 'holon', ],
     dependency_links=[
-        'https://github.com/txtr/holon/zipball/0.0.5#egg=holon-0.0.5',
+        'https://github.com/txtr/holon/zipball/0.0.5#egg=holon',
     ]
 )
