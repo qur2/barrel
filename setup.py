@@ -13,8 +13,8 @@ setup(
     url='https://github.com/txtr/barrel/',
     packages=find_packages(),
     platforms='any',
-    install_requires=['blinker', 'iso8601', 'holon==0.0.4', ],
+    install_requires=['blinker', 'iso8601', 'holon==0.0.5', ],
     dependency_links=[
-        'https://github.com/txtr/holon/zipball/0.0.4#egg=holon-0.0.4',
+        'https://github.com/txtr/holon/zipball/0.0.5#egg=holon-0.0.5',
     ]
 )
