@@ -57,7 +57,7 @@ class CacheClearer(namedtuple('Cacher', 'engine, keygen')):
         # so make no assumption from the proxied function.
         cache_keys = self.keygen(*keygen_args)
         self.engine.delete_many(cache_keys)
-        logging.info("cache clear: %s" % repr(cache_keys))
+        logging.info("cache clear: %s" % cache_keys)
 
 
 def get_cacher(engine, keygen, needs_cache, duration):
