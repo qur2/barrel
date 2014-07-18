@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/txtr/barrel.svg?branch=master)](https://travis-ci.org/txtr/barrel)
+[![Coverage Status](https://coveralls.io/repos/txtr/barrel/badge.png?branch=master)](https://coveralls.io/r/txtr/barrel?branch=master)
 
 # Barrel
 
