@@ -4,9 +4,13 @@ python:
 install:
   # installing the `barrel` package - the dependencies will be installed
   - python setup.py install
+  # `coveralls` to run tests with coverage
+  - pip install coveralls
 script:
   # all the tests
-  - python -m unittest discover barrel.tests
+  - coverage run --source=barrel -m unittest discover barrel.tests
+after_success:
+  - coveralls
 notifications:
   # send the notification about the build results
   email:
