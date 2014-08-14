@@ -3,6 +3,7 @@ import contextlib
 import logging
 
 
+logger = logging.getLogger(__name__)
 #  empty is here to disambiguate None and inexisting values from the cache
 empty = object()
 
@@ -32,12 +33,12 @@ class Cacher(namedtuple('Cacher', 'engine, keygen, needs_cache, duration')):
         if cache_val is empty:
             cache_val = fn(*args, **kwargs)
             if self.needs_cache(cache_val):
-                logging.info("cache miss: %s" % cache_key)
+                logger.info("cache miss: %s" % cache_key)
                 self.engine.set(cache_key, cache_val, self.duration)
             else:
-                logging.info("no cache: %s" % cache_key)
+                logger.info("no cache: %s" % cache_key)
         else:
-            logging.info("cache hit: %s" % cache_key)
+            logger.info("cache hit: %s" % cache_key)
         return cache_val
 
 
@@ -57,7 +58,7 @@ class CacheClearer(namedtuple('Cacher', 'engine, keygen')):
         # so make no assumption from the proxied function.
         cache_keys = self.keygen(*keygen_args)
         self.engine.delete_many(cache_keys)
-        logging.info("cache clear: %s" % repr(cache_keys))
+        logger.info("cache clear: %s" % repr(cache_keys))
 
 
 def get_cacher(engine, keygen, needs_cache, duration):
