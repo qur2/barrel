@@ -1,16 +1,34 @@
 from collections import namedtuple
 import contextlib
 import logging
+import unicodedata
 
 
 logger = logging.getLogger(__name__)
-#  empty is here to disambiguate None and inexisting values from the cache
+# empty is here to disambiguate None and inexisting values from the cache
 empty = object()
 
 
+def _stringify(item):
+    """Helper function to handle `call_key` params:
+    - it ensures unicode for strings
+    - it joins tuples and lists using a comma
+    """
+    if isinstance(item, (tuple, list)):
+        return u','.join(item)
+    else:
+        return unicode(item)
+
+
 def call_key(cls_or_module, fn, args, sep=','):
-    """Generate a cache key base on function call arguments."""
-    return '%s.%s(%s)' % (cls_or_module, fn, sep.join(map(unicode, args)).replace(' ', '_'))
+    """Generate a cache key base on function call arguments.
+    Control characters are stripped out and spaces are replaced by
+    underscores (memcached-friendly).
+    """
+    argstring = sep.join(map(_stringify, args)).replace(' ', '_')
+    argstring = ''.join(ch for ch in argstring
+                        if unicodedata.category(ch)[0] != "C")
+    return '%s.%s(%s)' % (cls_or_module, fn, argstring)
 
 
 needs_cache_always = lambda x: True
