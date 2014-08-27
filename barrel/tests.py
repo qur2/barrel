@@ -70,11 +70,14 @@ class BarrelTestCase(TestCase):
 
     def testSimpleGet(self):
         """`simple_get` behaves like dictionary `__getitem__`"""
-        self.assertEqual(simple_get("userID", self.raw_data), self.raw_data["userID"])
+        self.assertEqual(
+            simple_get("userID", self.raw_data), self.raw_data["userID"])
 
     def testDeepGet(self):
         """`deep_get` handles nested dictionaries"""
-        self.assertEqual(deep_get("settings:com.bookpac.user.settings.locale", self.raw_data), self.raw_data["settings"]["com.bookpac.user.settings.locale"])
+        self.assertEqual(
+            deep_get("settings:com.bookpac.user.settings.locale", self.raw_data),
+            self.raw_data["settings"]["com.bookpac.user.settings.locale"])
 
     def testSimpleSet(self):
         """`simple_set` behaves like dictionary `__setitem__`"""
@@ -90,7 +93,9 @@ class BarrelTestCase(TestCase):
 
     def testDeepGetSeparator(self):
         """`deep_get` can receive any separator"""
-        self.assertEqual(deep_get("settings/com.bookpac.user.settings.locale", self.raw_data, sep='/'), self.raw_data["settings"]["com.bookpac.user.settings.locale"])
+        self.assertEqual(
+            deep_get("settings/com.bookpac.user.settings.locale", self.raw_data, sep='/'),
+            self.raw_data["settings"]["com.bookpac.user.settings.locale"])
 
     def testFieldNoTarget(self):
         """`Field` cannot be instantiated without target"""
@@ -104,22 +109,37 @@ class BarrelTestCase(TestCase):
         """`Store` handles `Field`-type attributes"""
         class User(Store):
             id = Field(target='userID')
+
         u = User(self.raw_data)
         self.assertEqual(u.id, self.raw_data["userID"])
+
+    def testStoreWithInitialValues(self):
+        """`Store` allows to set fields at init time"""
+        class User(Store):
+            id = Field(target='userID')
+            locale = Field(target='settings:com.bookpac.user.settings.locale')
+
+        u = User(id='init id', locale='init locale')
+        self.assertEqual(u.id, 'init id')
+        self.assertEqual(u.locale, 'init locale')
 
     def testStoreFieldWithDefaultValue(self):
         """`Store` handles `Field`-type attributes"""
         default = ''
+
         class User(Store):
             f = Field(target='__nowhere', default=default)
+
         u = User(self.raw_data)
         self.assertEqual(u.f, default)
 
     def testStoreFieldSet(self):
         """`Store` sets `Field`-type attributes"""
         local_data = self.raw_data.copy()
+
         class User(Store):
             id = Field(target='userID')
+
         u = User(local_data)
         u.id = 'eureka!'
         self.assertEqual(u.id, local_data['userID'])
@@ -128,12 +148,15 @@ class BarrelTestCase(TestCase):
         """`Store` handles any attributes"""
         class User(Store):
             id = 'some'
+
         # check that __getattribute__ doesn't mess with the normal attributes
         self.assertEqual(User().id, 'some')
 
     def testEmbeddedStoreField(self):
         """`EmbeddedStoreField` has the `store` attribute of the given class"""
-        class Foo(Store): pass
+        class Foo(Store):
+            pass
+
         f = EmbeddedStoreField('target', Foo)
         self.assertEqual(f.store.__class__.__name__, 'Foo')
 
@@ -141,19 +164,26 @@ class BarrelTestCase(TestCase):
         """`Store` propagates data to the embedded store"""
         class UserSettings(Store):
             locale = Field(target='com.bookpac.user.settings.locale')
+
         class User(Store):
-            settings = EmbeddedStoreField(target='settings', store_class=UserSettings)
+            settings = EmbeddedStoreField(target='settings',
+                                          store_class=UserSettings)
 
         u = User(self.raw_data)
-        self.assertEqual(u.settings.locale, self.raw_data["settings"]["com.bookpac.user.settings.locale"])
+        self.assertEqual(
+            u.settings.locale,
+            self.raw_data["settings"]["com.bookpac.user.settings.locale"])
 
     def testStoreWithEmbeddedStoreFieldSet(self):
         """`Store` sets data in the embedded store"""
         local_data = deepcopy(self.raw_data)
+
         class UserSettings(Store):
             locale = Field(target='com.bookpac.user.settings.locale')
+
         class User(Store):
-            settings = EmbeddedStoreField(target='settings', store_class=UserSettings)
+            settings = EmbeddedStoreField(target='settings',
+                                          store_class=UserSettings)
 
         u = User(local_data)
         u.settings.locale = 'FU'
@@ -162,25 +192,33 @@ class BarrelTestCase(TestCase):
     def testEmbeddedStoreData(self):
         """Setting data for `EmbeddedStoreField` modifies the data for the parent `Store`"""
         local_data = deepcopy(self.raw_data)
+
         class UserSettings(Store):
             locale = Field(target='com.bookpac.user.settings.locale')
+
         class User(Store):
-            settings = EmbeddedStoreField(target='settings', store_class=UserSettings)
+            settings = EmbeddedStoreField(target='settings',
+                                          store_class=UserSettings)
 
         u = User(local_data)
         u.settings.locale = 'FU'
-        self.assertEqual(u.data["settings"]["com.bookpac.user.settings.locale"], 'FU')
+        self.assertEqual(
+            u.data["settings"]["com.bookpac.user.settings.locale"], 'FU')
 
     def testEmbeddedStoreCache(self):
         """Embedded stores are added to cache lazily upon access"""
         class UserSettings(Store):
             locale = Field(target='com.bookpac.user.settings.locale')
+
         class ReaktorMoney(Store):
             amount = FloatField(target='amount')
             currency = Field(target='currency')
+
         class User(Store):
-            settings = EmbeddedStoreField(target='settings', store_class=UserSettings)
-            money = EmbeddedStoreField(target='money', store_class=ReaktorMoney)
+            settings = EmbeddedStoreField(target='settings',
+                                          store_class=UserSettings)
+            money = EmbeddedStoreField(target='money',
+                                       store_class=ReaktorMoney)
 
         u = User(self.raw_data)
         u.money.amount
@@ -195,17 +233,20 @@ class BarrelTestCase(TestCase):
     def testCollectionStore(self):
         """`CollectionStore` items have the given store class"""
         class Foo(Store): pass
-        a = CollectionStore(data=self.raw_data["externalUserIdentifiers"], store_class=Foo)
+        a = CollectionStore(data=self.raw_data["externalUserIdentifiers"],
+                            store_class=Foo)
         self.assertEqual(a[0].__class__.__name__, 'Foo')
 
     def testCollectionStoreLength(self):
         """Array `Store` looks like an list"""
-        a = CollectionStore(data=self.raw_data["externalUserIdentifiers"], store_class=Store)
+        a = CollectionStore(data=self.raw_data["externalUserIdentifiers"],
+                            store_class=Store)
         self.assertEqual(len(a), len(self.raw_data["externalUserIdentifiers"]))
 
     def testCollectionStoreIterable(self):
         """Array `Store` can be iterated over"""
-        a = CollectionStore(data=self.raw_data["externalUserIdentifiers"], store_class=Store)
+        a = CollectionStore(data=self.raw_data["externalUserIdentifiers"],
+                            store_class=Store)
         try:
             for i in a:
                 pass
@@ -216,21 +257,31 @@ class BarrelTestCase(TestCase):
         """Nested `EmbeddedStoreField` are instantiated with correct data"""
         class Bar(Store):
             bar = Field('bar')
+
         class Foo(Store):
             foo = EmbeddedStoreField('foo', Bar)
+
         class Buzz(Store):
             fooes = EmbeddedStoreField('xzibit', Foo, is_array=True)
+
         b = Buzz(self.raw_data)
-        self.assertEqual(b.fooes[0].foo.bar, self.raw_data["xzibit"][0]["foo"]["bar"])
+        self.assertEqual(
+            b.fooes[0].foo.bar, self.raw_data["xzibit"][0]["foo"]["bar"])
 
     def testStoreWithEmbeddedStoreFieldCollection(self):
         """`Store` propagates data to the embedded collection store"""
         class UserExternalUid(Store):
             service = Field(target='authenticationServiceName')
+
         class User(Store):
-            external_uid = EmbeddedStoreField(target='externalUserIdentifiers', store_class=UserExternalUid, is_array=True)
+            external_uid = EmbeddedStoreField(
+                target='externalUserIdentifiers',
+                store_class=UserExternalUid, is_array=True)
+
         u = User(self.raw_data)
-        self.assertEqual(u.external_uid[0].service, self.raw_data["externalUserIdentifiers"][0]["authenticationServiceName"])
+        self.assertEqual(
+            u.external_uid[0].service,
+            self.raw_data["externalUserIdentifiers"][0]["authenticationServiceName"])
 
     def testStoreAttributeLookupError(self):
         """`Store` throws `AttributeError` for non-existing keys"""
@@ -309,7 +360,9 @@ class BarrelTestCase(TestCase):
         class User(Store):
             money = MoneyField(target='money')
         u = User(self.raw_data)
-        self.assertEqual(u.money.amount, Decimal(self.raw_data['money']['amount']).quantize(Decimal("0.00")))
+        self.assertEqual(
+            u.money.amount,
+            Decimal(self.raw_data['money']['amount']).quantize(Decimal("0.00")))
 
     @skip('`MoneyField` is not supported yet')
     def testMoneyFieldCurrency(self):
@@ -317,4 +370,5 @@ class BarrelTestCase(TestCase):
         class User(Store):
             money = MoneyField(target='money')
         u = User(self.raw_data)
-        self.assertEqual(u.money.currency.code, self.raw_data['money']['currency'])
+        self.assertEqual(
+            u.money.currency.code, self.raw_data['money']['currency'])

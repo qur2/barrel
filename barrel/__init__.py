@@ -130,10 +130,13 @@ def deep_set(deep_key, dictionary, value, sep=':'):
     the compound key using the specified separator.
     """
     keys = deep_key.split(sep)
-    key = keys.pop()
+    last_key = keys.pop()
     while keys:
-        dictionary = dictionary[keys.pop(0)]
-    dictionary[key] = value
+        key = keys.pop(0)
+        if key not in dictionary:
+            dictionary[key] = {}
+        dictionary = dictionary[key]
+    dictionary[last_key] = value
 
 
 class Field(object):
@@ -158,7 +161,7 @@ class Field(object):
 
     def set(self, dct, value):
         if self.target and self.target_sep in self.target:
-            deep_set(self.target, dct, self.target_sep, value)
+            deep_set(self.target, dct, value, self.target_sep)
         else:
             simple_set(self.target, dct, value)
 
@@ -216,11 +219,14 @@ class Store(object):
     """Base model class for dict datastore handling."""
     __metaclass__ = StoreMeta
 
-    def __init__(self, data=None):
+    def __init__(self, data=None, **kwargs):
         if data is None:
             data = {}
         self.data = data
         self._embedded_stores_cache = {}
+        if kwargs:
+            for a, v in kwargs.iteritems():
+                setattr(self, a, v)
 
     def __getattribute__(self, name):
         selfattr = super(Store, self).__getattribute__
