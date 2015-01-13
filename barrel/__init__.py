@@ -1,10 +1,13 @@
-"""This module enables model-like encapsulation of big dict structure (like JSON data).
+"""This module enables model-like encapsulation of big dict
+structure (like JSON data).
 
-    When I die I want to decompose in a barrel of porter and have it served in all the pubs in Dublin.
+    When I die I want to decompose in a barrel of porter and have it served
+    in all the pubs in Dublin.
     J. P. Donleavy
 
-The goal is to *not* map the underlying dict but just wrap it in a programmer-friendly structure
-to allow attribute-like access and field aliasing.
+The goal is to *not* map the underlying dict but just wrap it in a
+programmer-friendly structure to allow attribute-like access and field
+aliasing.
 
 Field aliasing enables to virtually:
 
@@ -13,15 +16,16 @@ Field aliasing enables to virtually:
 """
 from .signals import class_ready
 from .utils import import_module
-from iso8601 import iso8601
-import inspect
 from holon import Reaktor
+from iso8601 import iso8601
 # from money import Money
+import inspect
 
 
 __all__ = [
     'config', 'Field', 'EmbeddedStoreField', 'Store', 'CollectionStore',
-    'BooleanField', 'DateField', 'IntField', 'FloatField', 'LongIntField', 'SplitField',
+    'BooleanField', 'DateField', 'IntField', 'FloatField', 'LongIntField',
+    'SplitField',
 ]
 
 
@@ -45,6 +49,7 @@ _default_config = {
     # this setting should be overridden
     'REAKTOR': Reaktor(**_reaktor_config),
 }
+
 
 class Config(object):
     """Small helper class that stores app configuration."""
@@ -87,9 +92,10 @@ class_ready.connect(resolve_pending_fields)
 
 
 class StoreMeta(type):
-    """Metaclass that farms and gather `Field`-type attributes in a new `fields`
-    attributes. This `fields` attribute later helps to easily identify if an
-    attribute is `Field` typed without iterating through all attributes.
+    """Metaclass that farms and gather `Field`-type attributes in a new
+    `fields` attributes. This `fields` attribute later helps to easily
+    identify if an attribute is `Field` typed without iterating through all
+    attributes.
     """
     def __new__(cls, name, bases, attrs):
         fields = {}
@@ -166,7 +172,9 @@ class Field(object):
             simple_set(self.target, dct, value)
 
     def __str__(self):
-        return "<%s.%s target=%s>" % (self.__module__, self.__class__.__name__, self.target)
+        return "<%s.%s target=%s>" % (self.__module__,
+                                      self.__class__.__name__,
+                                      self.target)
 
 
 class EmbeddedStoreField(Field):
@@ -282,8 +290,9 @@ class Store(object):
         return bool(self.data)
 
 
-class CollectionStore(Store):
-    """Handles collection of stores and provide array-like interface to access them.
+class CollectionStore(Store, list):
+    """Handles collection of stores and provide array-like interface to access
+    them. Inherit from list for easy type checking.
     """
 
     def __init__(self, store_class, data=None):
@@ -302,11 +311,145 @@ class CollectionStore(Store):
             self._embedded_stores_cache[index] = self.store_class(self.data[index])
         return self._embedded_stores_cache[index]
 
+    # Copied over from the UserList module.
     def __iter__(self):
-        return (self[k] for k in xrange(len(self)))
+        i = 0
+        try:
+            while True:
+                v = self[i]
+                yield v
+                i += 1
+        except IndexError:
+            return
+
+    def __repr__(self):
+        return repr(self.data)
+
+    def __lt__(self, other):
+        return self.data < self.__cast(other)
+
+    def __le__(self, other):
+        return self.data <= self.__cast(other)
+
+    def __eq__(self, other):
+        return self.data == self.__cast(other)
+
+    def __ne__(self, other):
+        return self.data != self.__cast(other)
+
+    def __gt__(self, other):
+        return self.data > self.__cast(other)
+
+    def __ge__(self, other):
+        return self.data >= self.__cast(other)
+
+    def __cast(self, other):
+        if isinstance(other, CollectionStore):
+            return other.data
+        else:
+            return other
+
+    def __cmp__(self, other):
+        return cmp(self.data, self.__cast(other))
+
+    def __hash__(self):
+        raise TypeError("unashable type: '%s'" % self.__class__.__name__)
+
+    def __contains__(self, item):
+        return item in self.data
 
     def __len__(self):
         return len(self.data)
+
+    def __setitem__(self, i, item):
+        self.data[i] = item
+
+    def __delitem__(self, i):
+        del self.data[i]
+
+    def __getslice__(self, i, j):
+        i = max(i, 0)
+        j = max(j, 0)
+        return self.__class__(self.store_class, self.data[i:j])
+
+    def __setslice__(self, i, j, other):
+        i = max(i, 0)
+        j = max(j, 0)
+        if isinstance(other, self.__class__):
+            self.data[i:j] = other.data
+        elif isinstance(other, type(self.data)):
+            self.data[i:j] = other
+        else:
+            self.data[i:j] = list(other)
+
+    def __delslice__(self, i, j):
+        i = max(i, 0)
+        j = max(j, 0)
+        del self.data[i:j]
+
+    def __add__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__class__(self.store_class, self.data + other.data)
+        elif isinstance(other, type(self.data)):
+            return self.__class__(self.store_class, self.data + other)
+        else:
+            return self.__class__(self.store_class, self.data + list(other))
+
+    def __radd__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__class__(self.store_class, other.data + self.data)
+        elif isinstance(other, type(self.data)):
+            return self.__class__(self.store_class, other + self.data)
+        else:
+            return self.__class__(self.store_class, list(other) + self.data)
+
+    def __iadd__(self, other):
+        if isinstance(other, self.__class__):
+            self.data += other.data
+        elif isinstance(other, type(self.data)):
+            self.data += other
+        else:
+            self.data += list(other)
+        return self
+
+    def __mul__(self, n):
+        return self.__class__(self.store_class, self.data*n)
+
+    __rmul__ = __mul__
+
+    def __imul__(self, n):
+        self.data *= n
+        return self
+
+    def append(self, item):
+        self.data.append(item)
+
+    def insert(self, i, item):
+        self.data.insert(i, item)
+
+    def pop(self, i=-1):
+        return self.data.pop(i)
+
+    def remove(self, item):
+        self.data.remove(item)
+
+    def count(self, item):
+        return self.data.count(item)
+
+    def index(self, item, *args):
+        return self.data.index(item, *args)
+
+    def reverse(self):
+        self.data.reverse()
+
+    def sort(self, *args, **kwds):
+        self.data.sort(*args, **kwds)
+
+    def extend(self, other):
+        if isinstance(other, self.__class__):
+            self.data.extend(other.data)
+        else:
+            self.data.extend(other)
 
 
 class BooleanField(Field):
