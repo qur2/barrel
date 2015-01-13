@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='barrel',
-    version='0.2.0',
+    version='0.3.0',
     description='Python stores for JSON data encapsulation',
     long_description=__doc__,
     license='BSD',
