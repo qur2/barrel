@@ -275,7 +275,8 @@ class Store(object):
 
     def __iter__(self):
         for name in self.fields:
-            yield name, getattr(self, name)
+            if hasattr(self, name):
+                yield name, getattr(self, name)
 
     def __nonzero__(self):
         return bool(self.data)
